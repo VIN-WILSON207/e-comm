@@ -1,0 +1,35 @@
+/* Navbar */
+header#navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #E5E7EB;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Logo */
+header .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #3B82F6;
+}
+
+/* Nav Links */
+header nav ul {
+    display: flex;
+    gap: 20px;
+}
+
+header nav ul li a {
+    font-size: 1rem;
+    color: #111827;
+    transition: color 0.3s;
+}
+
+header nav ul li a:hover {
+    color: #3B82F6;
+}
