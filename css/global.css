@@ -1,0 +1,50 @@
+/* Reset & Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #ffffff;
+    color: #111827;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* Buttons */
+.btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #3B82F6;
+    color: #ffffff;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #2563EB;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Section Headings */
+section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: #111827;
+}
