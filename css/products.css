@@ -4,7 +4,7 @@
     align-items: center;
     justify-content: center;
     height: 50vh;
-    background: linear-gradient(to top, rgba(0,0,0,0.5)50%,rgba(0,0,0,0.5)50%) , url(../images/electronic.jpg) no-repeat center/cover;
+    background: linear-gradient(to top, rgba(0,0,0,0.5)50%,rgba(0,0,0,0.5)50%) , url(../images/Electronics1.png) no-repeat center/cover;
     position: relative;
 }
 
