@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <div class="dashboard">
+
+    <!--  Sidebar -->
+    <aside class="sidebar">
+      <h2 class="sidebar-logo">ElectroHub</h2>
+      <ul>
+        <li class="active" data-page="myProducts">My Products</li>
+        <li data-page="addProduct">Add Product</li>
+        <li data-page="profile">Profile</li>
+        <li id="logoutBtn">Logout</li>
+      </ul>
+    </aside>
+
+    <!--  Main Area -->
+    <main class="main">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <span id="sellerEmail">Logged in as: </span>
+      </header>
+
+      <!-- Page Content Container -->
+      <section id="pageContent">
+        <!-- Default view will be My Products -->
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
