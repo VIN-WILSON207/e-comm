@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/products.css">
+
+
+    <!-- Load the modular firebase module -->
+    <script type="module" src="js/firebase.js"></script>
+
 </head>
 <body>
 
@@ -19,18 +24,38 @@
 
             <!--  Search Bar -->
             <div class="search-box">
-                <input type="text" placeholder="Search products...">
+                <input id="homeSearchInput" type="text" placeholder="Search products or categories...">
                 <span class="search-icon">🔍</span>
             </div>
 
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html" class="active">Home</a></li>
                 <li><a href="products.html">Products</a></li>
                 <li><a href="cart.html">Cart</a></li>
-                <li><a href="profile.html">Profile</a></li>
-                <li><a href="login.html">Login</a></li>
+                <li><a href="favorites.html">Favorites</a></li>
+                <li><a href="#" id="sellBtn" class="locked">Sell</a></li>
+
+                <li id="authArea">
+                    <a id="signinLink" href="login.html">Sign In</a>
+
+                    <div id="profileMenu" class="hidden">
+                    <img id="profileIcon" src="https://img.icons8.com/ios-filled/50/000000/user-male-circle.png" class="h-8 w-8 cursor-pointer">
+
+                    <div id="profileDropdown" class="profile-dropdown hidden">
+                        <p id="userEmailDisplay"></p
+                        <a href="#" id="logoutUser">Logout</a>
+                    </div>
+                    </div>
+                </li>
+
             </ul>
         </nav>
+
+        <div id="loginPopup" class="popup hidden">
+            <p>You need to sign in to continue.</p>
+            <a href="login.html" class="btn-primary">Sign In</a>
+        </div>
+
     </header>
 
     <!-- HERO SECTION -->
@@ -52,10 +77,39 @@
 
     <!-- FOOTER -->
     <footer>
-        <p>&copy; 2025 ElectroHub. All rights reserved.</p>
+        <div class="footer-inner">
+            <p>&copy; 2025 ElectroHub. All rights reserved.</p>
+            <div class="links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Support</a>
+            </div>
+        </div>
     </footer>
 
-    <script src="js/products.js"></script>
-    <script src="js/ui.js"></script>
+    <!-- Slide Panels: Cart & Favorites -->
+    <aside id="cartPanel" class="side-panel">
+        <div class="panel-header">
+            <h3>My Cart</h3>
+            <button class="panel-close" data-target="cartPanel">✕</button>
+        </div>
+        <div id="cartItems" class="panel-body"></div>
+        <div class="panel-footer">
+            <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
+            <button id="checkoutBtn" class="btn-primary">Checkout</button>
+        </div>
+    </aside>
+
+    <aside id="favoritesPanel" class="side-panel">
+        <div class="panel-header">
+            <h3>My Favorites</h3>
+            <button class="panel-close" data-target="favoritesPanel">✕</button>
+        </div>
+        <div id="favoritesItems" class="panel-body"></div>
+    </aside>
+
+    <script type="module" src="js/products.js"></script>
+    <script type="module" src="js/ui.js"></script>
+
 </body>
 </html>

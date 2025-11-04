@@ -10,47 +10,33 @@
 
   <div class="dashboard">
 
-    <!--  Sidebar -->
-    <aside class="sidebar">
-      <h2 class="sidebar-logo">ElectroHub</h2>
-      <ul>
-        <li class="active" data-page="myProducts">My Products</li>
-        <li data-page="addProduct">Add Product</li>
-        <li data-page="profile">Profile</li>
-        <li id="logoutBtn">Logout</li>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <h2 class="sidebar-logo">ElectroHub Seller</h2>
+      <ul class="menu">
+        <li data-page="overview" class="active"><span class="icon">🏠</span><span class="label">Dashboard</span></li>
+        <li data-page="myProducts"><span class="icon">🧾</span><span class="label">My Products</span></li>
+        <li data-page="addProduct"><span class="icon">➕</span><span class="label">Add Product</span></li>
+        <li data-page="orders"><span class="icon">🛍️</span><span class="label">Orders</span></li>
+        <li data-page="analytics"><span class="icon">📊</span><span class="label">Analytics</span></li>
+        <li data-page="profile"><span class="icon">👤</span><span class="label">Profile</span></li>
+        <li data-page="messages"><span class="icon">✉️</span><span class="label">Messages</span></li>
+        <li id="logoutBtn"><span class="icon">🚪</span><span class="label">Logout</span></li>
       </ul>
     </aside>
 
-    <!--  Main Area -->
-    <main class="main">
-
-      <!-- Top bar -->
-      <header class="topbar">
-        <span id="sellerEmail">Logged in as: </span>
-      </header>
-
-      <!-- Page Content Container -->
-      <section id="pageContent">
-        <!-- Default view will be My Products -->
-      </section>
-
+    <!-- Main Content -->
+    <main class="content"> 
+      <div class="topbar">
+        <button id="sidebarToggle" class="burger" aria-label="Toggle menu">☰</button>
+        <h1 id="contentTitle">Dashboard</h1>
+        <input type="text" id="globalSearch" placeholder="Search products or orders...">
+      </div>
+      <section id="pageContent"></section>
     </main>
 
   </div>
 
-  
-  <!-- Firebase App -->
-<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
-
-<!-- Firebase Auth -->
-<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js"></script>
-
-<!-- Firestore -->
-<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js"></script>
-
-<!-- Your Firebase Config -->
-<script src="firebase.js"></script>
-
-  <script src="js/dashboard.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #f5f7fa;
+  background: #f4f6f9;
 }
 
 /* Layout */
@@ -13,15 +13,19 @@ body {
 /* Sidebar */
 .sidebar {
   width: 240px;
-  background: #ffffff;
+  background: #0d47a1;
   border-right: 1px solid #e5e7eb;
-  padding: 20px;
+  padding: 20px 0;
+  color: white;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-logo {
   margin-bottom: 30px;
   font-size: 1.3rem;
   font-weight: bold;
+  text-align: center;
 }
 
 .sidebar ul {
@@ -30,31 +34,155 @@ body {
 }
 
 .sidebar li {
-  padding: 12px 10px;
+  padding: 14px 25px;
   border-radius: 6px;
   cursor: pointer;
   margin-bottom: 8px;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .sidebar li:hover,
 .sidebar li.active {
-  background: #e2e8f0;
+  background: #1565c0;
 }
 
 /* Main Section */
-.main {
+.content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding: 24px;
+  overflow-y: auto;
 }
 
-/* Top Bar */
 .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.burger {
+  border: none;
+  background: #e5e7eb;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.topbar input {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  width: 280px;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+/* Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.card {
   background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px 20px;
-  font-size: 0.95rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.card.stat h3 {
+  margin: 0 0 8px 0;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.filters input, .filters select {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.table th, .table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  text-align: left;
+}
+
+.table thead th {
+  background: #f9fafb;
+}
+
+/* Profile */
+.profile-form .grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-form input, .profile-form button {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.profile-form button.btn-primary {
+  background: #0d47a1;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+/* Messages */
+.messages .message-item {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+form input, form textarea, form button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+form button {
+  background: #0d47a1;
+  color: white;
+  cursor: pointer;
+  border: none;
 }
 
 /* Page Content */
@@ -117,5 +245,54 @@ body {
 .delete-btn {
   background: #EF4444;
   color: #fff;
+}
+
+.add-product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 450px;
+}
+
+.upload-area {
+  border: 2px dashed #cbd5e1;
+  padding: 30px;
+  text-align: center;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.upload-area.dragging {
+  background: #e0f2fe;
+  border-color: #0ea5e9;
+}
+
+#previewImage {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.add-product-form input,
+.add-product-form textarea {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+/* Responsive Sidebar Collapse */
+.dashboard { position: relative; }
+.sidebar.collapsed { width: 72px; }
+.sidebar.collapsed .label { display: none; }
+@media (max-width: 900px) {
+  .sidebar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    transform: translateX(0);
+    transition: transform 0.2s ease;
+    z-index: 20;
+  }
+  .sidebar.hide { transform: translateX(-100%); }
 }
 

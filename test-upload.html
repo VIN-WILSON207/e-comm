@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudinary Test</title>
+</head>
+<body>
+
+    <h2>Test Image Upload</h2>
+
+    <input type="file" id="imageInput">
+    <button id="uploadBtn">Upload Image</button>
+
+    <script type="module">
+    import { CLOUD_NAME, UPLOAD_PRESET } from "./cloudinaryConfig.js";
+
+    async function uploadImage(file) {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        const res = await fetch(url, {
+        method: "POST",
+        body: formData
+        });
+
+        const data = await res.json();
+        console.log("Uploaded Image URL:", data.secure_url);
+        alert("✅ Image uploaded, check console!");
+    }
+
+    document.getElementById("uploadBtn").addEventListener("click", () => {
+        const file = document.getElementById("imageInput").files[0];
+        if (!file) return alert("Select an image first");
+        uploadImage(file);
+    });
+    </script>
+
+</body>
+</html>

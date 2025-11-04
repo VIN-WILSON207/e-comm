@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products - ElectroHub</title>
+
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/navbar.css" />
+  <link rel="stylesheet" href="css/products.css" />
+
+  <!-- Firebase -->
+  <script type="module" src="js/firebase.js"></script>
+</head>
+<body>
+
+<header id="navbar">
+  <div class="logo">ElectroHub</div>
+
+  <nav>
+    <div class="search-box">
+      <input id="productsNavSearch" type="text" placeholder="Search products or categories...">
+      <span class="search-icon">🔍</span>
+    </div>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="products.html" class="active">Products</a></li>
+      <li><a href="cart.html">Cart</a></li>
+      <li><a href="favorites.html">Favorites</a></li>
+      <li><a href="#" id="sellBtn" class="locked">Sell</a></li>
+
+      <li id="authArea">
+        <a href="login.html" id="signinLink">Sign In</a>
+        <div id="profileMenu" class="hidden">
+          <img id="profileIcon" src="https://img.icons8.com/ios-filled/50/user-male-circle.png" class="profile-img" />
+          <div class="profile-dropdown hidden" id="profileDropdown">
+            <p id="userEmailDisplay"></p>
+            <a href="dashboard.html">Sell Dashboard</a>
+            <a href="#" id="logoutUser">Logout</a>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </nav>
+
+  <div id="loginPopup" class="popup hidden">
+    <div class="popup-content">
+      <p>You need to sign in to continue.</p>
+      <a href="login.html" class="btn-primary">Sign In</a>
+    </div>
+  </div>
+</header>
+
+<!-- PAGE CONTENT -->
+<section class="product-page">
+
+  <!-- Filters & Search -->
+  <div class="controls">
+
+    <select id="categoryFilter">
+      <option value="all">All Categories</option>
+      <option value="phones">Mobile Phones</option>
+      <option value="laptops">Laptops</option>
+      <option value="computers">Desktop Computers</option>
+      <option value="tablets">Tablets</option>
+      <option value="tv">Televisions</option>
+      <option value="audio">Speakers & Headphones</option>
+      <option value="gaming">Gaming Consoles</option>
+      <option value="accessories">Accessories</option>
+    </select>
+
+    <select id="sortFilter">
+      <option value="newest">Newest</option>
+      <option value="low-high">Price: Low → High</option>
+      <option value="high-low">Price: High → Low</option>
+    </select>
+  </div>
+
+  <!-- Product Grid -->
+  <div class="product-grid" id="productsContainer"></div>
+
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <p>&copy; 2025 ElectroHub. All rights reserved.</p>
+    <div class="links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Support</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Slide Panels: Cart & Favorites -->
+<aside id="cartPanel" class="side-panel">
+  <div class="panel-header">
+    <h3>My Cart</h3>
+    <button class="panel-close" data-target="cartPanel">✕</button>
+  </div>
+  <div id="cartItems" class="panel-body"></div>
+  <div class="panel-footer">
+    <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
+    <button id="checkoutBtn" class="btn-primary">Checkout</button>
+  </div>
+  </aside>
+
+<aside id="favoritesPanel" class="side-panel">
+  <div class="panel-header">
+    <h3>My Favorites</h3>
+    <button class="panel-close" data-target="favoritesPanel">✕</button>
+  </div>
+  <div id="favoritesItems" class="panel-body"></div>
+</aside>
+
+<!-- UI and Product Logic -->
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/products.js"></script>
+
+</body>
+</html>
