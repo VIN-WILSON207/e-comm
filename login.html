@@ -1,39 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login / Signup</title>
-<link rel="stylesheet" href="css/auth.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login / Signup</title>
+  <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
+  <div class="auth-container">
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="form active">
+      <h2>Sign in</h2>
+      <div id="loginError" class="form-message"></div>
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" required />
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" required />
+      <button type="submit">Sign In</button>
+      <button type="button" id="forgotPasswordBtn" class="link-btn">Forgot password?</button>
+      <p>Don't have an account? <button type="button" class="toggle-form">Create account</button></p>
+    </form>
 
-<div class="auth-container">
+    <!-- SIGNUP FORM -->
+    <form id="signupForm" class="form">
+      <h2>Create account</h2>
+      <div id="signupError" class="form-message"></div>
+      <label for="fullName">Full name</label>
+      <input id="fullName" type="text" required />
+      <label for="signupEmail">Email</label>
+      <input id="signupEmail" type="email" required />
+      <label for="signupPassword">Password</label>
+      <input id="signupPassword" type="password" required />
+      <button type="submit">Create account</button>
+      <p>Already have an account? <button type="button" class="toggle-form">Sign in</button></p>
+    </form>
+  </div>
 
-  <!-- Login Form -->
-  <form id="loginForm" class="form active">
-    <h2>Welcome Back</h2>
-    <input type="email" id="loginEmail" placeholder="Email" required>
-    <input type="password" id="loginPassword" placeholder="Password" required>
-    <button type="submit">Sign In</button>
-    <p>Don't have an account? <span class="toggle-form">Create account</span></p>
-  </form>
-
-  <!-- Signup Form -->
-  <form id="signupForm" class="form">
-    <h2>Create Account</h2>
-    <input type="text" id="fullName" placeholder="Full Name" required>
-    <input type="email" id="signupEmail" placeholder="Email" required>
-    <input type="password" id="signupPassword" placeholder="Password" required>
-
-    <button type="submit">Sign Up</button>
-    <p>Already have an account? <span class="toggle-form">Login</span></p>
-  </form>
-
-</div>
-
-<script type="module" src="js/auth.js"></script>
-
+  <script type="module" src="js/auth.js"></script>
 </body>
 </html>
 

@@ -45,7 +45,7 @@
   box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
 }
 
-.form button {
+.form button[type="submit"] {
   width: 100%;
   padding: 12px;
   background: #3498db;
@@ -58,7 +58,7 @@
   transition: background 0.3s ease;
 }
 
-.form button:hover {
+.form button[type="submit"]:hover {
   background: #2980b9;
 }
 
@@ -78,6 +78,38 @@
 .toggle-form:hover {
   color: #2980b9;
   text-decoration: underline;
+}
+
+/* Forgot Password Button - Modernized */
+.link-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-weight: 500;
+  margin-top: 12px;
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.link-btn:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.link-btn:active {
+  transform: scale(0.98);
+}
+
+/* Remove any default button styling */
+.link-btn:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Add responsive design */

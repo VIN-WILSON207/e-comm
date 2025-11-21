@@ -2,6 +2,7 @@ import { auth, db } from "./firebase.js";
 import { collection, addDoc, query, where, getDocs, doc, deleteDoc, updateDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { CLOUD_NAME, UPLOAD_PRESET } from "./cloudinaryConfig.js";
+import { MAX_UPLOAD_SIZE, validationCopy, showToast } from "./utils.js";
 
 // Sidebar Navigation
 const sidebarItems = document.querySelectorAll(".sidebar li");
@@ -191,47 +192,50 @@ async function loadMyProducts() {
     <div id="productsGrid" class="products-grid">Loading...</div>
   `;
 
-  const user = auth.currentUser;
-  const q = query(collection(db, "products"), where("ownerId", "==", user.uid));
-  const snapshot = await getDocs(q);
-
   const container = document.getElementById("productsGrid");
-  container.innerHTML = "";
-
-  if (snapshot.empty) {
-    container.innerHTML = "<p>You haven't added any products yet.</p>";
-    return;
+  const user = auth.currentUser;
+  try {
+    const q = query(collection(db, "products"), where("ownerId", "==", user.uid));
+    const snapshot = await getDocs(q);
+    container.innerHTML = "";
+    if (snapshot.empty) {
+      container.innerHTML = "<p>You haven't added any products yet.</p>";
+      return;
+    }
+    snapshot.forEach(docSnap => {
+      const p = docSnap.data();
+      const productId = docSnap.id;
+      container.innerHTML += `
+        <div class="product-card">
+          <img src="${p.imageUrl}" alt="">
+          <h3>${p.name}</h3>
+          <p class="price">${p.price} FCFA</p>
+          <button class="edit-btn" data-id="${productId}">Edit</button>
+          <button class="delete-btn" data-id="${productId}">Delete</button>
+        </div>
+      `;
+    });
+    container.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this product?")) return;
+        try {
+          await deleteDoc(doc(db, "products", btn.dataset.id));
+          showToast("Product deleted", "success");
+          loadMyProducts();
+        } catch (error) {
+          console.error(error);
+          showToast("Unable to delete product.", "error");
+        }
+      });
+    });
+    container.querySelectorAll(".edit-btn").forEach(btn => {
+      btn.addEventListener("click", () => loadAddProductForm(btn.dataset.id));
+    });
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = "<p>Unable to load products right now.</p>";
+    showToast("Unable to load products.", "error");
   }
-
-  snapshot.forEach(docSnap => {
-    const p = docSnap.data();
-    const productId = docSnap.id;
-    container.innerHTML += `
-      <div class="product-card">
-        <img src="${p.imageUrl}" alt="">
-        <h3>${p.name}</h3>
-        <p class="price">${p.price} FCFA</p>
-        <button class="edit-btn" data-id="${productId}">Edit</button>
-        <button class="delete-btn" data-id="${productId}">Delete</button>
-      </div>
-    `;
-  });
-
-  // Delete
-  container.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Delete this product?")) return;
-      await deleteDoc(doc(db, "products", btn.dataset.id));
-      loadMyProducts();
-    });
-  });
-
-  // Edit
-  container.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      loadAddProductForm(btn.dataset.id);
-    });
-  });
 }
 
 //  ADD / EDIT PRODUCT PAGE 
@@ -245,6 +249,7 @@ function loadAddProductForm(editProductId = null) {
         <button type="button" id="browseBtn">Browse File</button>
         <input type="file" id="fileInput" hidden accept="image/*">
         <img id="previewImage" style="display:none;">
+        <p class="helper-text error" id="uploadError"></p>
       </div>
 
       <label for="productCategory">Category</label>
@@ -276,57 +281,62 @@ function loadAddProductForm(editProductId = null) {
   // Load existing data if editing
   if (editProductId) {
     (async () => {
-      const docSnap = await getDoc(doc(db, "products", editProductId));
-      if (!docSnap.exists()) return;
-
-      const data = docSnap.data();
-      if (data.category) document.getElementById("productCategory").value = data.category;
-      document.getElementById("productName").value = data.name;
-      document.getElementById("productDescription").value = data.description;
-      document.getElementById("productPrice").value = data.price;
-
-      const previewImage = document.getElementById("previewImage");
-      previewImage.src = data.imageUrl;
-      previewImage.style.display = "block";
+      try {
+        const docSnap = await getDoc(doc(db, "products", editProductId));
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+        if (data.category) document.getElementById("productCategory").value = data.category;
+        document.getElementById("productName").value = data.name;
+        document.getElementById("productDescription").value = data.description;
+        document.getElementById("productPrice").value = data.price;
+        const previewImage = document.getElementById("previewImage");
+        previewImage.src = data.imageUrl;
+        previewImage.style.display = "block";
+      } catch (error) {
+        console.error(error);
+        showToast("Unable to load product.", "error");
+      }
     })();
   }
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
-
-    const name = document.getElementById("productName").value;
-    const category = document.getElementById("productCategory").value;
-    const desc = document.getElementById("productDescription").value;
-    const price = Number(document.getElementById("productPrice").value);
-
-    let imageUrl = null;
-
-    if (window.selectedFile) {
-      const fd = new FormData();
-      fd.append("file", window.selectedFile);
-      fd.append("upload_preset", UPLOAD_PRESET);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
-      const upload = await res.json();
-      imageUrl = upload.secure_url;
+    try {
+      const name = document.getElementById("productName").value;
+      const category = document.getElementById("productCategory").value;
+      const desc = document.getElementById("productDescription").value;
+      const price = Number(document.getElementById("productPrice").value);
+      let imageUrl = null;
+      if (window.selectedFile) {
+        const fd = new FormData();
+        fd.append("file", window.selectedFile);
+        fd.append("upload_preset", UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
+        const upload = await res.json();
+        if (upload.error) throw new Error(upload.error.message);
+        imageUrl = upload.secure_url;
+      }
+      const user = auth.currentUser;
+      if (editProductId) {
+        await updateDoc(doc(db, "products", editProductId), {
+          name, category, description: desc, price, ...(imageUrl && { imageUrl })
+        });
+        showToast("Product updated.", "success");
+      } else {
+        await addDoc(collection(db, "products"), {
+          name, category, description: desc, price,
+          imageUrl: imageUrl || "",
+          ownerId: user.uid,
+          sellerEmail: user.email,
+          createdAt: new Date()
+        });
+        showToast("Product added.", "success");
+      }
+      loadMyProducts();
+    } catch (error) {
+      console.error(error);
+      showToast("Unable to save product.", "error");
     }
-
-    const user = auth.currentUser;
-
-    if (editProductId) {
-      await updateDoc(doc(db, "products", editProductId), {
-        name, category, description: desc, price, ...(imageUrl && { imageUrl })
-      });
-    } else {
-      await addDoc(collection(db, "products"), {
-        name, category, description: desc, price,
-        imageUrl: imageUrl || "",
-        ownerId: user.uid,
-        sellerEmail: user.email,
-        createdAt: new Date()
-      });
-    }
-
-    loadMyProducts();
   });
 }
 
@@ -336,6 +346,11 @@ function initUploadHandlers() {
   const fileInput = document.getElementById("fileInput");
   const browseBtn = document.getElementById("browseBtn");
   const previewImage = document.getElementById("previewImage");
+  const errorEl = document.getElementById("uploadError");
+
+  const setError = (message = "") => {
+    if (errorEl) errorEl.textContent = message;
+  };
 
   browseBtn.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", e => handleFile(e.target));
@@ -350,6 +365,15 @@ function initUploadHandlers() {
   function handleFile(source) {
     const file = source.files && source.files[0];
     if (!file) return;
+     if (!file.type.startsWith("image/")) {
+       setError(validationCopy.fileType);
+       return;
+     }
+     if (file.size > MAX_UPLOAD_SIZE) {
+       setError(validationCopy.fileSize);
+       return;
+     }
+     setError("");
     previewImage.src = URL.createObjectURL(file);
     previewImage.style.display = "block";
     window.selectedFile = file;

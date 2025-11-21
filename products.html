@@ -4,118 +4,161 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Products - ElectroHub</title>
-
   <link rel="stylesheet" href="css/global.css" />
   <link rel="stylesheet" href="css/navbar.css" />
   <link rel="stylesheet" href="css/products.css" />
-
-  <!-- Firebase -->
-  <script type="module" src="js/firebase.js"></script>
 </head>
 <body>
 
-<header id="navbar">
-  <div class="logo">ElectroHub</div>
+  <!-- NAVBAR: Identical structure (no search on products page) -->
+  <header id="navbar">
+    <div class="logo">ElectroHub</div>
 
-  <nav>
-    <div class="search-box">
-      <input id="productsNavSearch" type="text" placeholder="Search products or categories...">
-      <span class="search-icon">🔍</span>
-    </div>
-    <ul>
-      <li><a href="index.html">Home</a></li>
-      <li><a href="products.html" class="active">Products</a></li>
-      <li><a href="cart.html">Cart</a></li>
-      <li><a href="favorites.html">Favorites</a></li>
-      <li><a href="#" id="sellBtn" class="locked">Sell</a></li>
+    <nav class="main-nav">
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html" class="active">Products</a></li>
+        <li><button type="button" id="cartToggle" class="nav-link">🛒 Cart</button></li>
+        <li><button type="button" id="favoritesToggle" class="nav-link">❤️ Favorites</button></li>
+      </ul>
+    </nav>
 
-      <li id="authArea">
-        <a href="login.html" id="signinLink">Sign In</a>
+    <!-- RIGHT ACTIONS: Sell + Auth (always aligned right) -->
+    <div class="nav-actions">
+      <button id="sellBtn" type="button" class="nav-pill">Sell</button>
+
+      <div id="authArea">
+        <!-- Sign In Link (shown when logged out) -->
+        <div id="authLinks">
+          <a id="signinLink" class="nav-pill" href="login.html">Sign In</a>
+        </div>
+
+        <!-- Profile Menu (shown when logged in) -->
         <div id="profileMenu" class="hidden">
-          <img id="profileIcon" src="https://img.icons8.com/ios-filled/50/user-male-circle.png" class="profile-img" />
-          <div class="profile-dropdown hidden" id="profileDropdown">
-            <p id="userEmailDisplay"></p>
-            <a href="dashboard.html">Sell Dashboard</a>
-            <a href="#" id="logoutUser">Logout</a>
+          <button id="profileIcon" class="profile-trigger" aria-haspopup="true" aria-expanded="false">👤</button>
+          <div id="profileDropdown" class="profile-dropdown hidden">
+            <p id="userEmailDisplay" class="profile-email"></p>
+            <hr />
+            <button type="button" class="dropdown-link" id="profileOrdersBtn">My Orders</button>
+            <button type="button" class="dropdown-link" id="profileSettingsBtn">Settings</button>
+            <button type="button" class="dropdown-link" id="profileHelpBtn">Help & Feedback</button>
+            <hr />
+            <button type="button" id="profileLogoutBtn" class="dropdown-link danger">Logout</button>
           </div>
         </div>
-      </li>
-    </ul>
-  </nav>
-
-  <div id="loginPopup" class="popup hidden">
-    <div class="popup-content">
-      <p>You need to sign in to continue.</p>
-      <a href="login.html" class="btn-primary">Sign In</a>
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 
-<!-- PAGE CONTENT -->
-<section class="product-page">
+  <!-- PAGE CONTENT -->
+  <section class="product-page">
+    <!-- Filters & Search -->
+    <div class="controls">
+      <div class="control search-control">
+        <label for="productsPageSearch">Search products</label>
+        <div class="search-box standalone">
+          <input id="productsPageSearch" type="text" placeholder="Search by name, category or keyword">
+          <span class="search-icon">🔍</span>
+        </div>
+      </div>
 
-  <!-- Filters & Search -->
-  <div class="controls">
+      <div class="control select-control">
+        <label for="categoryFilter">Category</label>
+        <select id="categoryFilter">
+          <option value="all">All Categories</option>
+          <option value="phones">Mobile Phones</option>
+          <option value="laptops">Laptops</option>
+          <option value="computers">Desktop Computers</option>
+          <option value="tablets">Tablets</option>
+          <option value="tv">Televisions</option>
+          <option value="audio">Speakers & Headphones</option>
+          <option value="gaming">Gaming Consoles</option>
+          <option value="accessories">Accessories</option>
+        </select>
+      </div>
 
-    <select id="categoryFilter">
-      <option value="all">All Categories</option>
-      <option value="phones">Mobile Phones</option>
-      <option value="laptops">Laptops</option>
-      <option value="computers">Desktop Computers</option>
-      <option value="tablets">Tablets</option>
-      <option value="tv">Televisions</option>
-      <option value="audio">Speakers & Headphones</option>
-      <option value="gaming">Gaming Consoles</option>
-      <option value="accessories">Accessories</option>
-    </select>
-
-    <select id="sortFilter">
-      <option value="newest">Newest</option>
-      <option value="low-high">Price: Low → High</option>
-      <option value="high-low">Price: High → Low</option>
-    </select>
-  </div>
-
-  <!-- Product Grid -->
-  <div class="product-grid" id="productsContainer"></div>
-
-</section>
-
-<footer>
-  <div class="footer-inner">
-    <p>&copy; 2025 ElectroHub. All rights reserved.</p>
-    <div class="links">
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
-      <a href="#">Support</a>
+      <div class="control select-control">
+        <label for="sortFilter">Sort by</label>
+        <select id="sortFilter">
+          <option value="newest">Newest</option>
+          <option value="low-high">Price: Low → High</option>
+          <option value="high-low">Price: High → Low</option>
+        </select>
+      </div>
     </div>
-  </div>
-</footer>
 
-<!-- Slide Panels: Cart & Favorites -->
-<aside id="cartPanel" class="side-panel">
-  <div class="panel-header">
-    <h3>My Cart</h3>
-    <button class="panel-close" data-target="cartPanel">✕</button>
-  </div>
-  <div id="cartItems" class="panel-body"></div>
-  <div class="panel-footer">
-    <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
-    <button id="checkoutBtn" class="btn-primary">Checkout</button>
-  </div>
+    <!-- Product Grid -->
+    <div class="product-grid" id="productsContainer"></div>
+
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <h3>ElectroHub</h3>
+        <p>Premium marketplace connecting verified sellers with buyers across Africa.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="products.html">Products</a></li>
+          <li><a href="dashboard.html">Sell electronics</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">Order Tracking</a></li>
+          <li><a href="#">Shipping & Returns</a></li>
+          <li><a href="#">Contact Support</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Community</h4>
+        <p>Follow new product drops, tutorials, and reviews.</p>
+        <button class="btn-primary" type="button">Join Newsletter</button>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 ElectroHub. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Accessibility</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SIDE PANELS -->
+  <aside id="cartPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Cart</h3>
+      <button class="panel-close" aria-label="Close cart">✕</button>
+    </div>
+    <div id="cartItems" class="panel-body"></div>
+    <div class="panel-footer">
+      <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
+      <button id="checkoutBtn" class="btn-primary">Checkout</button>
+    </div>
   </aside>
 
-<aside id="favoritesPanel" class="side-panel">
-  <div class="panel-header">
-    <h3>My Favorites</h3>
-    <button class="panel-close" data-target="favoritesPanel">✕</button>
-  </div>
-  <div id="favoritesItems" class="panel-body"></div>
-</aside>
+  <aside id="favoritesPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Favorites</h3>
+      <button class="panel-close" aria-label="Close favorites">✕</button>
+    </div>
+    <div id="favoritesItems" class="panel-body"></div>
+  </aside>
 
-<!-- UI and Product Logic -->
-<script type="module" src="js/ui.js"></script>
-<script type="module" src="js/products.js"></script>
+  <!-- Login Popup -->
+  <div id="loginPopup" class="popup hidden"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/products.js"></script>
+  <script type="module" src="js/ui.js"></script>
 
 </body>
 </html>

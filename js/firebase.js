@@ -1,10 +1,9 @@
-
-  // Import the functions you need from the SDKs you need
+// Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
   import { getAuth } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
   import { getFirestore } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
+  // Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyAPln8-TSSebj2fCk1Kqekxq3dur_b5V3M",
     authDomain: "electronics-hub-willy.firebaseapp.com",
@@ -19,5 +18,9 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  // Make auth globally available for diagnostic script
+  window.auth = auth;
+  window.db = db;
+
   // Export for other modules to import
-  export { auth, db };
+  export { auth, db, app };
