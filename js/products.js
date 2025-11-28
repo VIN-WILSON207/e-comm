@@ -1,5 +1,5 @@
 import { auth, db } from "./firebase.js";
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { cartStore } from "./stores.js";
 import { showToast, friendlyError, upsertItem } from "./utils.js";
 import { searchManager } from "./search.js";
@@ -185,8 +185,20 @@ function attachGridHandlers() {
     if (event.target.classList.contains("btn-cart")) {
       if (!auth.currentUser) return showLoginPopup();
       const summary = getProductSummary(card, productId);
-      cartStore.addItem(summary);
-      showToast("Added to cart", "success");
+
+      // Prefer UI-level addToCart (saves to Firebase). Fallback to cartStore if not available.
+      if (typeof window.addToCart === "function") {
+        try {
+          window.addToCart(summary.productId, summary.name, summary.price, summary.imageUrl);
+        } catch (err) {
+          console.error("addToCart error:", err);
+          cartStore.addItem(summary);
+          showToast("Added to cart", "success");
+        }
+      } else {
+        cartStore.addItem(summary);
+        showToast("Added to cart", "success");
+      }
       return;
     }
 
@@ -332,12 +344,60 @@ async function handleReviewSubmit(productId, form) {
   }
 }
 
-function showLoginPopup() {
-  const popup = document.getElementById("loginPopup");
-  if (!popup) return alert("Please sign in to continue.");
-  popup.classList.add("show");
-  setTimeout(() => popup.classList.remove("show"), 3000);
+/**
+ * SHOW LOGIN POPUP - Call the global function from ui.js
+ */
+function showLoginPopup(action = "cart") {
+  if (typeof window.showLoginPopup === "function") {
+    window.showLoginPopup(action);
+  } else {
+    // fallback if ui.js hasn't loaded yet
+    alert("Please sign in to continue.");
+    window.location.href = "login.html";
+  }
 }
+
+/**
+ * ADD TO CART FROM PRODUCT CARD
+ */
+window.addToCartFromProduct = function (productId, productName, productPrice, productImage) {
+  console.log("🛒 Add to cart clicked:", productName);
+  
+  // CHECK if user is logged in
+  if (!auth.currentUser) {
+    console.log("⚠️ User not logged in - showing login popup");
+    showLoginPopup("cart");
+    return;
+  }
+
+  if (typeof window.addToCart === 'function') {
+    window.addToCart(productId, productName, productPrice, productImage);
+  } else {
+    console.error("❌ addToCart function not found in window");
+    showError("Failed to add item to cart");
+  }
+};
+
+/**
+ * TOGGLE FAVORITE
+ */
+window.toggleFavorite = async function (productId, productName, productPrice, productImage) {
+  console.log("❤️ Toggle favorite:", productName);
+  
+  // CHECK if user is logged in
+  if (!auth.currentUser) {
+    console.log("⚠️ User not logged in - showing login popup");
+    showLoginPopup("favorites");
+    return;
+  }
+
+  if (typeof window.addToFavorites === 'function') {
+    await window.addToFavorites(productId, productName, productPrice, productImage);
+  } else {
+    console.error("❌ addToFavorites function not found in window");
+    showError("Failed to add to favorites");
+  }
+};
 
 function ensureProductModal() {
   if (modalState.element) return modalState.element;
@@ -405,12 +465,21 @@ function ensureProductModal() {
     if (!modalState.product) return;
     await handleReviewSubmit(modalState.product.id, modalState.refs.reviewForm);
   });
+
+  // Use UI addToCart if present (this writes to Firebase and updates cart UI)
   modalState.refs.cartBtn.addEventListener("click", () => {
     if (!modalState.product) return;
     if (!auth.currentUser) return showLoginPopup();
-    cartStore.addItem(summaryFromProduct(modalState.product));
-    showToast("Added to cart", "success");
+    const p = modalState.product;
+    if (typeof window.addToCart === "function") {
+      window.addToCart(p.id, p.name, p.price, p.imageUrl);
+    } else {
+      // fallback to cartStore
+      cartStore.addItem(summaryFromProduct(p));
+      showToast("Added to cart", "success");
+    }
   });
+
   modalState.refs.favBtn.addEventListener("click", async () => {
     if (!modalState.product) return;
     if (!auth.currentUser) return showLoginPopup();
@@ -456,3 +525,161 @@ function updateModalFavoriteState(productId) {
   modalState.refs.favBtn.textContent = isActive ? "Favorited" : "Favorite";
   modalState.refs.favBtn.classList.toggle("active", isActive);
 }
+
+/* ---------- SEARCH & FILTERING (ensure it always runs) ---------- */
+import { debounce } from "./utils.js"; // add if not already imported
+
+// ensure these exist (safe fallback)
+window.allProducts = window.allProducts || [];
+
+let _productsCache = window.allProducts; // used by applyFiltersAndSort
+function setProductsCache(list) {
+  _productsCache = Array.isArray(list) ? list : [];
+  window.allProducts = _productsCache;
+}
+
+/**
+ * applyFiltersAndSort - reads search inputs and updates product grid
+ */
+function applyFiltersAndSort() {
+  const searchInputs = [
+    document.getElementById("searchInput"),
+    document.getElementById("homeSearchInput"),
+    document.getElementById("productsPageSearch"),
+  ].filter(Boolean);
+
+  const query = searchInputs.map(i => (i.value || "").toLowerCase().trim()).find(Boolean) || "";
+
+  const category = (document.getElementById("categoryFilter")?.value || "all").toLowerCase();
+  const sortBy = document.getElementById("sortFilter")?.value || "";
+
+  let filtered = (_productsCache || []).slice();
+
+  if (query) {
+    filtered = filtered.filter(p =>
+      (String(p.name || "")).toLowerCase().includes(query) ||
+      (String(p.category || "")).toLowerCase().includes(query) ||
+      (String(p.seller || "")).toLowerCase().includes(query)
+    );
+  }
+
+  if (category && category !== "all") {
+    filtered = filtered.filter(p => (String(p.category || "")).toLowerCase() === category);
+  }
+
+  if (sortBy === "low-high") {
+    filtered.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+  } else if (sortBy === "high-low") {
+    filtered.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+  } else if (sortBy === "newest") {
+    filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }
+
+  if (typeof renderProducts === "function") {
+    renderProducts(filtered);
+  } else {
+    console.warn("renderProducts not found for search results");
+  }
+}
+
+const debouncedFilter = debounce(applyFiltersAndSort, 250);
+
+/**
+ * registerSearchInputs - register inputs with searchManager (if available)
+ * and attach local input listeners as a reliable fallback.
+ */
+function registerSearchInputs() {
+  const selectors = [
+    ".search-box input",
+    "#searchInput",
+    "#homeSearchInput",
+    "#productsPageSearch",
+    "#productsPageSearch" // duplicate safe
+  ].join(",");
+
+  const inputs = Array.from(document.querySelectorAll(selectors)).filter(Boolean);
+
+  inputs.forEach((input) => {
+    // try using global searchManager if present
+    try {
+      if (window.searchManager && typeof window.searchManager.register === "function") {
+        window.searchManager.register(input);
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // always attach fallback listeners
+    input.removeEventListener("input", debouncedFilter);
+    input.addEventListener("input", debouncedFilter);
+  });
+
+  // also attach category/sort handlers if present
+  const cat = document.getElementById("categoryFilter");
+  const sort = document.getElementById("sortFilter");
+  if (cat) {
+    cat.removeEventListener("change", debouncedFilter);
+    cat.addEventListener("change", debouncedFilter);
+  }
+  if (sort) {
+    sort.removeEventListener("change", debouncedFilter);
+    sort.addEventListener("change", debouncedFilter);
+  }
+}
+
+/* ---------- wire up after products load ---------- */
+/* If you already have loadProducts or renderProducts, call setProductsCache when products load.
+   Example: after loading products into `allProducts`, call setProductsCache(allProducts) and then applyFiltersAndSort().
+*/
+
+export function productsLoaded(list) {
+  setProductsCache(list);
+  applyFiltersAndSort();
+}
+
+/* Call these on module init */
+document.addEventListener("DOMContentLoaded", () => {
+  registerSearchInputs();
+  // if products already loaded into window.allProducts, ensure UI reflects it
+  if ((window.allProducts || []).length) {
+    setProductsCache(window.allProducts);
+    applyFiltersAndSort();
+  }
+});
+
+// ---------- REALTIME UPDATES (optional, for advanced use) ---------- //
+// top-level unsubscribe handle
+let _productsUnsubscribe = null;
+
+// replace your one-time loadProducts with a realtime version or add this new function
+export async function watchProductsRealtime() {
+  try {
+    // detach previous
+    if (_productsUnsubscribe) _productsUnsubscribe();
+
+    const colRef = collection(db, "products");
+    _productsUnsubscribe = onSnapshot(colRef, (snapshot) => {
+      const products = [];
+      snapshot.forEach((d) => products.push({ id: d.id, ...d.data() }));
+      // keep a cache used by search/filter
+      window.allProducts = products;
+      // call your existing render / filter pipeline
+      if (typeof productsLoaded === "function") {
+        productsLoaded(products);
+      } else if (typeof renderProducts === "function") {
+        renderProducts(products);
+      }
+    }, (err) => {
+      console.error("Products onSnapshot error:", err);
+    });
+  } catch (err) {
+    console.error("watchProductsRealtime error:", err);
+  }
+}
+
+// call watcher on module init (or from app init)
+document.addEventListener("DOMContentLoaded", () => {
+  // fallback: if you still have a loadProducts() that fetches once, you may keep it.
+  // start realtime watch:
+  if (typeof watchProductsRealtime === "function") watchProductsRealtime();
+});

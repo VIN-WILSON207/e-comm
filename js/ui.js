@@ -1,21 +1,11 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { handleImageError, showToast, getCart, saveCart, showError, showSuccess } from "./utils.js";
 
-// ============================================
+    
 // UI REFERENCES
-// ============================================
+    
 const refs = {
   signinLink: document.getElementById("signinLink"),
   sellBtn: document.getElementById("sellBtn"),
@@ -37,9 +27,9 @@ const refs = {
   authLinks: document.getElementById("authLinks"),
 };
 
-// ============================================
+    
 // STATE
-// ============================================
+   
 const state = {
   profile: null,
   orders: [],
@@ -50,11 +40,13 @@ const state = {
   handlersAttached: false,
 };
 
+let _userDocUnsubscribe = null;
+
 window.handleImageError = handleImageError;
 
-// ============================================
+   
 // INIT
-// ============================================
+   
 function init() {
   setupPanelClosers();
   setupPanelOpeners();
@@ -65,29 +57,46 @@ function init() {
   updateCartUI();
 }
 
-// ============================================
+    
 // AUTH STATE LISTENER
-// ============================================
+   
 onAuthStateChanged(auth, async (user) => {
   state.authReady = true;
   state.currentUser = user;
 
-  console.log("🔐 Auth state changed:", user ? user.email : "logged out");
+  // detach previous listener
+  if (_userDocUnsubscribe) {
+    _userDocUnsubscribe();
+    _userDocUnsubscribe = null;
+  }
 
   toggleAuthUI(Boolean(user));
 
   if (user) {
-    console.log("✅ User logged in:", user.uid);
     await ensureUserDoc(user.uid);
     await hydrateProfile(user);
-    await loadCartFromFirebase(user.uid);
-    await renderFavorites();
+
+    // realtime listener for user's document -- updates cart & favorites automatically
+    _userDocUnsubscribe = onSnapshot(doc(db, "users", user.uid), (snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      state.cart = Array.isArray(data.cart) ? data.cart : [];
+      state.favorites = Array.isArray(data.favorites) ? data.favorites : [];
+      updateCartDisplay();
+      updateCartUI();
+      renderFavorites(); // safe to call even if panel not open
+    }, (err) => {
+      console.error("User doc onSnapshot error:", err);
+    });
+
+    // initial load already covered by listener, but keep hydrateProfile if needed
   } else {
-    console.log("❌ User logged out");
+    // user logged out: clear local state and UI
     state.profile = null;
     state.cart = [];
     state.favorites = [];
     renderLoggedOutProfile();
+    updateCartDisplay();
+    updateCartUI();
     if (refs.favoritesItems) {
       refs.favoritesItems.innerHTML = emptyState({
         title: "No favorites yet",
@@ -97,9 +106,9 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ============================================
+    
 // SETUP FUNCTIONS
-// ============================================
+    
 function setupProfileActions() {
   console.log("📱 Setting up profile actions...");
 
@@ -171,9 +180,9 @@ function attachCheckoutHandler() {
   });
 }
 
-// ============================================
+   
 // NAVBAR HANDLERS
-// ============================================
+
 function attachNavbarHandlers() {
   if (state.handlersAttached) return;
   state.handlersAttached = true;
@@ -280,65 +289,95 @@ function attachNavbarHandlers() {
   });
 }
 
-// ============================================
-// LOGIN POPUP
-// ============================================
-function showLoginPopup(action = "action") {
-  const popup = document.getElementById("loginPopup");
-  if (!popup) {
-    alert("Please sign in to continue.");
-    window.location.href = "login.html";
-    return;
-  }
-
-  const messages = {
-    cart: "Sign in to view your cart",
-    favorites: "Sign in to save your favorites",
-    sell: "Sign in to start selling",
-    checkout: "Sign in to proceed with checkout",
-  };
-
-  popup.innerHTML = `
-    <div class="popup-content" role="dialog" aria-modal="true">
-      <button class="popup-close" aria-label="Close popup">✕</button>
-      <h3>${messages[action] || "Sign in to continue"}</h3>
-      <p>You need to be logged in to access this feature.</p>
-      <div class="popup-buttons">
-        <a href="login.html" class="btn-primary">Sign In</a>
-        <button class="btn-secondary" type="button">Cancel</button>
-      </div>
-    </div>
-  `;
-
-  popup.classList.remove("hidden");
-  popup.style.display = "flex";
-
-  const closeBtn = popup.querySelector(".popup-close");
-  const cancelBtn = popup.querySelector(".btn-secondary");
-
-  const closePop = () => {
-    popup.classList.add("hidden");
-    popup.style.display = "none";
-  };
-
-  if (closeBtn) closeBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closePop();
-  });
-
-  if (cancelBtn) cancelBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closePop();
-  });
-
-  popup.addEventListener("click", (e) => {
-    if (e.target === popup) closePop();
-  });
+   
+/* ---------- Login popup: ensure element + show/hide logic ---------- */
+function _ensureLoginPopupElement() {
+    let p = document.getElementById("loginPopup");
+    if (!p) {
+        p = document.createElement("div");
+        p.id = "loginPopup";
+        p.className = "popup hidden";
+        p.style.display = "none";
+        document.body.appendChild(p);
+        console.log("✅ created #loginPopup element");
+    }
+    return p;
 }
 
-// ============================================
+function _buildLoginPopupHtml(action = "general") {
+    const msgs = {
+        cart: "Sign in to view your cart",
+        favorites: "Sign in to save your favorites",
+        sell: "Sign in to start selling",
+        checkout: "Sign in to proceed with checkout",
+        general: "Sign in to continue"
+    };
+    const m = msgs[action] || msgs.general;
+    return `
+      <div class="popup-inner" role="dialog" aria-modal="true">
+        <button class="popup-close" aria-label="Close popup">✕</button>
+        <h3>${m}</h3>
+        <p>You need to be logged in to use this feature.</p>
+        <div class="popup-actions">
+          <a href="login.html" class="btn-primary">Sign In</a>
+          <button class="btn-secondary btn-cancel" type="button">Cancel</button>
+        </div>
+      </div>
+    `;
+}
+
+function showLoginPopup(action = "general") {
+    try {
+        console.log("📋 showLoginPopup called:", action);
+        const popup = _ensureLoginPopupElement();
+        popup.innerHTML = _buildLoginPopupHtml(action);
+
+        // show
+        popup.classList.remove("hidden");
+        popup.style.display = "flex";
+        popup.style.visibility = "visible";
+        popup.style.opacity = "1";
+
+        // close helpers
+        const close = () => {
+            popup.classList.add("hidden");
+            popup.style.display = "none";
+            popup.style.visibility = "hidden";
+            popup.style.opacity = "0";
+        };
+
+        const closeBtn = popup.querySelector(".popup-close");
+        if (closeBtn) closeBtn.addEventListener("click", (e) => { e.stopPropagation(); close(); });
+
+        const cancelBtn = popup.querySelector(".btn-cancel");
+        if (cancelBtn) cancelBtn.addEventListener("click", (e) => { e.stopPropagation(); close(); });
+
+        // close on outside click
+        popup.addEventListener("click", function onOutsideClick(e) {
+            if (e.target === popup) {
+                popup.removeEventListener("click", onOutsideClick);
+                close();
+            }
+        });
+
+        // close on escape
+        const onKey = (ev) => { if (ev.key === "Escape") { close(); window.removeEventListener("keydown", onKey); } };
+        window.addEventListener("keydown", onKey);
+
+        console.log("✅ login popup displayed");
+    } catch (err) {
+        console.error("❌ showLoginPopup error:", err);
+        // fallback redirect
+        window.location.href = "login.html";
+    }
+}
+
+// expose globally so other modules (products.js) can call it
+window.showLoginPopup = showLoginPopup;
+
+    
 // UI HELPERS
-// ============================================
+   
 function toggleAuthUI(isAuthenticated) {
   if (!refs.authLinks || !refs.profileMenu) return;
 
@@ -369,164 +408,137 @@ function closePanel(panel) {
   panel?.classList.remove("open");
 }
 
-// ============================================
+  
 // CART MANAGEMENT (Firebase)
-// ============================================
+  
+
+/**
+ * SAVE CART TO FIREBASE
+ * Use setDoc with merge so we create the user doc if it doesn't exist.
+ */
+async function saveCartToFirebase(userId, cart) {
+  try {
+    if (!userId) {
+      console.error("saveCartToFirebase: no userId");
+      return;
+    }
+    const userRef = doc(db, "users", userId);
+    // ensure cart is a plain array with serializable values
+    const sanitized = (Array.isArray(cart) ? cart : []).map((it) => ({
+      id: String(it.id || it.productId || ""),
+      name: String(it.name || ""),
+      price: Number(it.price) || 0,
+      image: it.image || it.imageUrl || "",
+      quantity: Number(it.quantity) || 1,
+    }));
+    // use setDoc with merge to avoid updateDoc failure when doc missing
+    await setDoc(userRef, { cart: sanitized, lastUpdated: new Date() }, { merge: true });
+    console.log("✅ Cart saved to Firestore (setDoc.merge)", sanitized.length);
+  } catch (err) {
+    console.error("❌ saveCartToFirebase error:", err);
+    throw err;
+  }
+}
 
 /**
  * LOAD CART FROM FIREBASE
- * Retrieves user's cart from Firebase and stores in state
  */
 async function loadCartFromFirebase(userId) {
   try {
     if (!userId) {
       state.cart = [];
+      updateCartDisplay();
+      updateCartUI();
       return;
     }
-
     const userRef = doc(db, "users", userId);
     const snap = await getDoc(userRef);
-
-    if (snap.exists()) {
-      const data = snap.data();
-      state.cart = Array.isArray(data.cart) ? data.cart : [];
-      console.log("✅ Cart loaded from Firebase:", state.cart.length, "items");
-    } else {
+    if (!snap.exists()) {
+      // initialize empty cart on user doc
+      await setDoc(userRef, { cart: [] }, { merge: true });
       state.cart = [];
+    } else {
+      const data = snap.data() || {};
+      state.cart = Array.isArray(data.cart) ? data.cart : [];
     }
-
+    console.log("📥 Cart loaded:", state.cart.length);
     updateCartDisplay();
     updateCartUI();
-  } catch (error) {
-    console.error("❌ Error loading cart:", error);
+  } catch (err) {
+    console.error("❌ loadCartFromFirebase error:", err);
     showError("Failed to load cart");
   }
 }
 
 /**
- * SAVE CART TO FIREBASE
- * Saves current cart state to Firebase
+ * REMOVE FROM CART (persist)
  */
-async function saveCartToFirebase(userId, cart) {
-  try {
-    if (!userId) return;
-
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { cart: cart });
-    console.log("✅ Cart saved to Firebase:", cart.length, "items");
-  } catch (error) {
-    console.error("❌ Error saving cart:", error);
-    showError("Failed to save cart");
-  }
-}
-
-/**
- * ADD TO CART
- * Adds product to cart or increments quantity if already exists
- * @param {string} productId
- * @param {string} productName
- * @param {number} productPrice
- * @param {string} productImage
- */
-window.addToCart = async function (productId, productName, productPrice, productImage) {
+window.removeFromCartUI = async function (productId) {
   try {
     if (!auth.currentUser) {
       showLoginPopup("cart");
       return;
     }
-
-    // Find existing item
-    const existingItem = state.cart.find(item => item.id === productId);
-
-    if (existingItem) {
-      // INCREMENT quantity
-      existingItem.quantity = (existingItem.quantity || 1) + 1;
-      console.log(`📈 Incremented ${productName} to quantity ${existingItem.quantity}`);
-    } else {
-      // ADD NEW item
-      state.cart.push({
-        id: productId,
-        name: productName,
-        price: Number(productPrice) || 0,
-        image: productImage,
-        quantity: 1
-      });
-      console.log(`✅ Added ${productName} to cart`);
-    }
-
-    // SAVE to Firebase
+    const item = state.cart.find((i) => i.id === productId || i.productId === productId);
+    const name = item?.name || "Item";
+    state.cart = state.cart.filter((i) => (i.id || i.productId) !== productId);
     await saveCartToFirebase(auth.currentUser.uid, state.cart);
-
-    // UPDATE UI
     updateCartDisplay();
     updateCartUI();
-    showSuccess(`${productName} added to cart!`);
-  } catch (error) {
-    showError("Failed to add item to cart");
-    console.error(error);
-  }
-};
-
-/**
- * REMOVE FROM CART
- * Removes item from cart by ID
- */
-window.removeFromCartUI = async function (productId) {
-  try {
-    if (!auth.currentUser) return;
-
-    const itemName = state.cart.find(item => item.id === productId)?.name || "Item";
-    state.cart = state.cart.filter(item => item.id !== productId);
-
-    // SAVE to Firebase
-    await saveCartToFirebase(auth.currentUser.uid, state.cart);
-
-    // UPDATE UI
-    updateCartDisplay();
-    updateCartUI();
-    showSuccess(`${itemName} removed from cart`);
-    console.log("🗑️ Item removed from cart");
-  } catch (error) {
+    showSuccess(`${name} removed from cart`);
+    console.log("🗑 Removed from cart:", productId);
+  } catch (err) {
+    console.error("❌ removeFromCartUI error:", err);
     showError("Failed to remove item");
-    console.error(error);
   }
 };
 
 /**
- * INCREMENT CART ITEM QUANTITY
+ * INCREMENT CART ITEM QUANTITY (persist)
  */
 window.incrementCartItem = async function (productId) {
   try {
-    if (!auth.currentUser) return;
-
-    const item = state.cart.find(i => i.id === productId);
-    if (item) {
-      item.quantity = (item.quantity || 1) + 1;
-      await saveCartToFirebase(auth.currentUser.uid, state.cart);
-      updateCartUI();
-      console.log("📈 Quantity incremented");
+    if (!auth.currentUser) {
+      showLoginPopup("cart");
+      return;
     }
-  } catch (error) {
-    console.error(error);
+    const item = state.cart.find((i) => (i.id || i.productId) === productId);
+    if (!item) return;
+    item.quantity = (Number(item.quantity) || 1) + 1;
+    await saveCartToFirebase(auth.currentUser.uid, state.cart);
+    updateCartUI();
+    updateCartDisplay();
+    console.log("➕ incremented", productId, "to", item.quantity);
+  } catch (err) {
+    console.error("❌ incrementCartItem error:", err);
+    showError("Failed to update quantity");
   }
 };
 
 /**
- * DECREMENT CART ITEM QUANTITY
+ * DECREMENT CART ITEM QUANTITY (persist)
  */
 window.decrementCartItem = async function (productId) {
   try {
-    if (!auth.currentUser) return;
-
-    const item = state.cart.find(i => i.id === productId);
-    if (item && item.quantity > 1) {
-      item.quantity--;
+    if (!auth.currentUser) {
+      showLoginPopup("cart");
+      return;
+    }
+    const item = state.cart.find((i) => (i.id || i.productId) === productId);
+    if (!item) return;
+    if ((Number(item.quantity) || 1) > 1) {
+      item.quantity = (Number(item.quantity) || 1) - 1;
       await saveCartToFirebase(auth.currentUser.uid, state.cart);
       updateCartUI();
-      console.log("📉 Quantity decremented");
+      updateCartDisplay();
+      console.log("➖ decremented", productId, "to", item.quantity);
+    } else {
+      // remove if quantity reaches zero/one->remove on - press
+      await window.removeFromCartUI(productId);
     }
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error("❌ decrementCartItem error:", err);
+    showError("Failed to update quantity");
   }
 };
 
@@ -585,9 +597,9 @@ function updateCartTotal() {
   console.log("💰 Cart total:", total, "FCFA");
 }
 
-// ============================================
+//    
 // FAVORITES
-// ============================================
+//    
 async function renderFavorites() {
   if (!refs.favoritesItems || !auth.currentUser) return;
 
@@ -619,7 +631,7 @@ async function renderFavorites() {
             <div class="price">${item.price || 0} FCFA</div>
             <div class="quantity-display">Qty: ${item.quantity || 1}</div>
           </div>
-          <button class="remove-btn">Remove</button>
+          <button class="remove-btn" aria-label="Remove from favorites">✕</button>
         </div>
       `,
       )
@@ -651,9 +663,9 @@ async function removeFavorite(productId) {
   await updateDoc(ref, { favorites: next });
 }
 
-// ============================================
+//    
 // PROFILE
-// ============================================
+//    
 async function ensureUserDoc(uid) {
   if (!uid) return;
 
@@ -685,9 +697,9 @@ function renderLoggedOutProfile() {
   // Profile logout state handled by ui
 }
 
-// ============================================
+//    
 // HELPERS
-// ============================================
+//    
 function emptyState({ title, message, showAction }) {
   return `
     <div class="empty-state">
@@ -717,17 +729,76 @@ async function signOutUser() {
   }
 }
 
-// ============================================
+/**
+ * ADD TO CART
+ * Adds product to cart or increments quantity if already exists
+ * Writes to Firebase in real-time
+ */
+window.addToCart = async function (productId, productName, productPrice, productImage) {
+  try {
+    console.log("🛒 addToCart called:", productId, productName);
+
+    // CHECK: User logged in?
+    if (!auth.currentUser) {
+      console.log("⚠️ User not logged in");
+      showLoginPopup("cart");
+      return;
+    }
+
+    console.log("✅ User authenticated:", auth.currentUser.uid);
+
+    // LOAD current cart from state
+    console.log("📦 Current cart before add:", state.cart);
+
+    // FIND existing item
+    const existingItem = state.cart.find(item => item.id === productId);
+
+    if (existingItem) {
+      // INCREMENT quantity
+      existingItem.quantity = (existingItem.quantity || 1) + 1;
+      console.log(`📈 Incremented ${productName} to quantity ${existingItem.quantity}`);
+    } else {
+      // ADD NEW item
+      const newItem = {
+        id: productId,
+        name: productName,
+        price: Number(productPrice) || 0,
+        image: productImage,
+        quantity: 1
+      };
+      state.cart.push(newItem);
+      console.log(`✅ Added new item to cart:`, newItem);
+    }
+
+    console.log("📦 Cart after add:", state.cart);
+
+    // SAVE to Firebase
+    console.log("💾 Saving cart to Firebase...");
+    await saveCartToFirebase(auth.currentUser.uid, state.cart);
+    console.log("✅ Cart saved to Firebase successfully");
+
+    // UPDATE UI
+    updateCartDisplay();
+    updateCartUI();
+    showSuccess(`${productName} added to cart!`);
+    
+  } catch (error) {
+    console.error("❌ Error in addToCart:", error);
+    showError("Failed to add item to cart");
+  }
+};
+
+//    
 // EXPOSE GLOBALLY
-// ============================================
+//    
 window.showLoginPopup = showLoginPopup;
 window.updateCartUI = updateCartUI;
 window.updateCartDisplay = updateCartDisplay;
 window.loadCartFromFirebase = loadCartFromFirebase;
 
-// ============================================
+//    
 // INITIALIZE
-// ============================================
+//    
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
 } else {
