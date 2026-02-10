@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,11 +9,19 @@
   <link rel="stylesheet" href="css/navbar.css" />
   <link rel="stylesheet" href="css/products.css" />
 </head>
+
 <body>
 
-  <!-- NAVBAR: Identical structure (no search on products page) -->
+  <!-- NAVBAR -->
   <header id="navbar">
-    <div class="logo">ElectroHub</div>
+    <div class="logo-container">
+      <div class="logo">ElectroHub</div>
+      <button id="mobileMenuToggle" class="mobile-toggle" aria-label="Toggle menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
 
     <nav class="main-nav">
       <ul class="nav-links">
@@ -21,34 +30,112 @@
         <li><button type="button" id="cartToggle" class="nav-link">🛒 Cart</button></li>
         <li><button type="button" id="favoritesToggle" class="nav-link">❤️ Favorites</button></li>
       </ul>
+      <div class="search-box">
+        <input type="text" id="navbarSearch" placeholder="Search products..." />
+        <span class="search-icon">🔍</span>
+      </div>
     </nav>
 
-    <!-- RIGHT ACTIONS: Sell + Auth (always aligned right) -->
     <div class="nav-actions">
       <button id="sellBtn" type="button" class="nav-pill">Sell</button>
-
       <div id="authArea">
-        <!-- Sign In Link (shown when logged out) -->
-        <div id="authLinks">
-          <a id="signinLink" class="nav-pill" href="login.html">Sign In</a>
+        <div id="authLinks" class="hidden">
+          <a href="login.html" class="nav-pill" id="signinLink">Sign In</a>
         </div>
-
-        <!-- Profile Menu (shown when logged in) -->
         <div id="profileMenu" class="hidden">
-          <button id="profileIcon" class="profile-trigger" aria-haspopup="true" aria-expanded="false">👤</button>
+          <button id="profileIcon" class="profile-trigger">👤</button>
           <div id="profileDropdown" class="profile-dropdown hidden">
-            <p id="userEmailDisplay" class="profile-email"></p>
+            <p class="profile-email" id="userEmailDisplay"></p>
             <hr />
-            <button type="button" class="dropdown-link" id="profileOrdersBtn">My Orders</button>
-            <button type="button" class="dropdown-link" id="profileSettingsBtn">Settings</button>
-            <button type="button" class="dropdown-link" id="profileHelpBtn">Help & Feedback</button>
+            <a href="dashboard.html" class="dropdown-link">Seller Dashboard</a>
+            <a href="orders.html" class="dropdown-link">My Orders</a>
             <hr />
-            <button type="button" id="profileLogoutBtn" class="dropdown-link danger">Logout</button>
+            <button type="button" class="dropdown-link danger" id="profileLogoutBtn">Logout</button>
           </div>
         </div>
       </div>
     </div>
   </header>
+
+  <!-- SIDE PANELS -->
+  <aside id="cartPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Cart</h3>
+      <button class="panel-close" aria-label="Close cart">✕</button>
+    </div>
+    <div id="cartItems" class="panel-body"></div>
+    <div class="panel-footer">
+      <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
+      <button id="checkoutBtn" class="btn-primary" style="width: 100%;">Checkout</button>
+    </div>
+  </aside>
+
+  <aside id="favoritesPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Favorites</h3>
+      <button class="panel-close" aria-label="Close favorites">✕</button>
+    </div>
+    <div id="favoritesItems" class="panel-body"></div>
+  </aside>
+
+  <!-- Payment Modal -->
+  <div id="paymentModal" class="popup hidden">
+    <div class="modal-box">
+      <div style="background: #111827; color: white; padding: 1.5rem; text-align: center;">
+        <h3 style="margin: 0;">Secure Payment</h3>
+        <p style="margin: 0.5rem 0 0; opacity: 0.8; font-size: 0.9rem;">Complete your transaction</p>
+      </div>
+
+      <div style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; font-weight: 600;">
+          <span>Total Amount:</span>
+          <span id="payAmountDisplay" style="color: #3B82F6;">0 FCFA</span>
+        </div>
+
+        <label class="helper-text">Select Payment Method</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.5rem;">
+          <button class="btn-secondary payment-method active" data-method="mtn"
+            style="padding: 0.5rem; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 1.2rem;">🟡</span> MTN MoMo
+          </button>
+          <button class="btn-secondary payment-method" data-method="orange"
+            style="padding: 0.5rem; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 1.2rem;">🟠</span> Orange Money
+          </button>
+        </div>
+
+        <label class="helper-text">Mobile Phone Number</label>
+        <input type="tel" id="payPhone" placeholder="6XXXXXXXX"
+          style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; margin-bottom: 1.5rem;">
+
+        <button id="confirmPayBtn" class="btn-primary" style="width: 100%; padding: 14px; font-weight: 700;">PAY
+          NOW</button>
+        <button type="button" class="link-btn" id="closePayModal" style="width: 100%; margin-top: 1rem;">Cancel</button>
+      </div>
+
+      <!-- Simulation Layer -->
+      <div id="paySimulation" class="hidden"
+        style="position: absolute; inset: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; z-index: 10;">
+        <div id="simSpinner" class="spinner"
+          style="width: 40px; height: 40px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 1rem;">
+        </div>
+        <h4 id="simStatus">Initiating STK Push...</h4>
+        <p id="simSubstatus" style="font-size: 0.9rem; color: #64748b;">Check your phone for the prompt.</p>
+
+        <div id="pinEntry" class="hidden" style="margin-top: 1rem;">
+          <p style="font-weight: 600; margin-bottom: 0.5rem;">Enter PIN on your mobile:</p>
+          <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-overlay" id="navOverlay"></div>
 
   <!-- PAGE CONTENT -->
   <section class="product-page">
@@ -159,7 +246,8 @@
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/ui.js"></script>
   <script type="module" src="js/products.js"></script>
-  
+
 
 </body>
+
 </html>

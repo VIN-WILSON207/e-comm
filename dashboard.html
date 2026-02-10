@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seller Dashboard</title>
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
+
 <body>
 
   <div class="dashboard">
@@ -21,22 +23,59 @@
         <li data-page="analytics"><span class="icon">📊</span><span class="label">Analytics</span></li>
         <li data-page="profile"><span class="icon">👤</span><span class="label">Profile</span></li>
         <li data-page="messages"><span class="icon">✉️</span><span class="label">Messages</span></li>
-        <li id="logoutBtn"><span class="icon">🚪</span><span class="label">Logout</span></li>
       </ul>
     </aside>
 
     <!-- Main Content -->
-    <main class="content"> 
+    <main class="content">
       <div class="topbar">
         <button id="sidebarToggle" class="burger" aria-label="Toggle menu">☰</button>
         <h1 id="contentTitle">Dashboard</h1>
-        <input type="text" id="globalSearch" placeholder="Search products or orders...">
+        <div class="topbar-right">
+          <input type="text" id="globalSearch" placeholder="Search products or orders...">
+          <div class="profile-photo-top" id="topProfilePhoto">👤</div>
+        </div>
       </div>
       <section id="pageContent"></section>
     </main>
 
   </div>
 
+  <!-- Verification Modal -->
+  <div id="verificationModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <button class="modal-close" id="closeVerifModal">✕</button>
+      <h2 style="margin-top: 0; color: #1e293b;">Seller Verification</h2>
+      <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Please provide your identity details to
+        become a verified seller.</p>
+
+      <div class="form-group">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">National ID (NID) Number</label>
+        <input type="text" id="nidNumber" placeholder="Enter your NID number"
+          style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; margin-bottom: 20px;">
+      </div>
+
+      <div class="upload-grid">
+        <div class="upload-card" onclick="document.getElementById('nidFront').click()">
+          <span class="icon">🪪</span>
+          <span class="label">NID Front View</span>
+          <input type="file" id="nidFront" class="hidden" accept="image/*" capture="environment">
+          <img id="frontPreview" class="preview hidden">
+        </div>
+        <div class="upload-card" onclick="document.getElementById('nidBack').click()">
+          <span class="icon">📄</span>
+          <span class="label">NID Back View</span>
+          <input type="file" id="nidBack" class="hidden" accept="image/*" capture="environment">
+          <img id="backPreview" class="preview hidden">
+        </div>
+      </div>
+
+      <button id="submitVerification" class="btn-primary"
+        style="width: 100%; margin-top: 10px; padding: 14px; font-weight: 700;">Submit for Review</button>
+    </div>
+  </div>
+
   <script type="module" src="js/dashboard.js"></script>
 </body>
+
 </html>

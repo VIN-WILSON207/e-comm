@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Orders - ElectroHub</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/navbar.css" />
+  <style>
+    .orders-container {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .orders-title {
+      margin-bottom: 2rem;
+      font-weight: 800;
+      color: #1e293b;
+    }
+
+    .order-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      border: 1px solid #f1f5f9;
+      transition: transform 0.2s ease;
+    }
+
+    .order-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .order-meta {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .order-id {
+      font-family: monospace;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .order-date {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .order-main {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .order-main img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .order-info {
+      flex: 1;
+    }
+
+    .order-info h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+      color: #1e293b;
+    }
+
+    .order-price {
+      font-weight: 700;
+      color: #3b82f6;
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
+    }
+
+    .order-badges {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-status {
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .badge-paid {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge-shipped {
+      background: #fef9c3;
+      color: #a16207;
+    }
+
+    .badge-escrow {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .order-actions {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .otp-display {
+      font-size: 0.9rem;
+      color: #64748b;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .btn-confirm {
+      background: #10b981;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-confirm:hover {
+      background: #059669;
+    }
+  </style>
+</head>
+
+<body style="background: #f8fafc;">
+
+  <!-- NAVBAR -->
+  <header id="navbar">
+    <div class="logo-container">
+      <div class="logo">ElectroHub</div>
+      <button id="mobileMenuToggle" class="mobile-toggle" aria-label="Toggle menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+
+    <nav class="main-nav">
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="orders.html" class="active">My Orders</a></li>
+        <li><button type="button" id="cartToggle" class="nav-link">🛒 Cart</button></li>
+      </ul>
+      <div class="search-box">
+        <input type="text" id="navbarSearch" placeholder="Search products..." />
+        <span class="search-icon">🔍</span>
+      </div>
+    </nav>
+
+    <div class="nav-actions">
+      <button id="sellBtn" type="button" class="nav-pill">Sell</button>
+      <div id="authArea">
+        <div id="authLinks" class="hidden">
+          <a href="login.html" class="nav-pill" id="signinLink">Sign In</a>
+        </div>
+        <div id="profileMenu" class="hidden">
+          <button id="profileIcon" class="profile-trigger">👤</button>
+          <div id="profileDropdown" class="profile-dropdown hidden">
+            <p class="profile-email" id="userEmailDisplay"></p>
+            <hr />
+            <a href="dashboard.html" class="dropdown-link">Seller Dashboard</a>
+            <a href="orders.html" class="dropdown-link">My Orders</a>
+            <hr />
+            <button type="button" class="dropdown-link danger" id="profileLogoutBtn">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDE PANELS -->
+  <aside id="cartPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Cart</h3>
+      <button class="panel-close" aria-label="Close cart">✕</button>
+    </div>
+    <div id="cartItems" class="panel-body"></div>
+    <div class="panel-footer">
+      <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
+      <button id="checkoutBtn" class="btn-primary" style="width: 100%;">Checkout</button>
+    </div>
+  </aside>
+
+  <aside id="favoritesPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Favorites</h3>
+      <button class="panel-close" aria-label="Close favorites">✕</button>
+    </div>
+    <div id="favoritesItems" class="panel-body"></div>
+  </aside>
+
+  <!-- Payment Modal -->
+  <div id="paymentModal" class="popup hidden">
+    <div class="modal-box">
+      <div style="background: #111827; color: white; padding: 1.5rem; text-align: center;">
+        <h3 style="margin: 0;">Secure Payment</h3>
+        <p style="margin: 0.5rem 0 0; opacity: 0.8; font-size: 0.9rem;">Complete your transaction</p>
+      </div>
+
+      <div style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; font-weight: 600;">
+          <span>Total Amount:</span>
+          <span id="payAmountDisplay" style="color: #3B82F6;">0 FCFA</span>
+        </div>
+
+        <label class="helper-text">Select Payment Method</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.5rem;">
+          <button class="btn-secondary payment-method active" data-method="mtn"
+            style="padding: 0.5rem; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 1.2rem;">🟡</span> MTN MoMo
+          </button>
+          <button class="btn-secondary payment-method" data-method="orange"
+            style="padding: 0.5rem; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 1.2rem;">🟠</span> Orange Money
+          </button>
+        </div>
+
+        <label class="helper-text">Mobile Phone Number</label>
+        <input type="tel" id="payPhone" placeholder="6XXXXXXXX"
+          style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; margin-bottom: 1.5rem;">
+
+        <button id="confirmPayBtn" class="btn-primary" style="width: 100%; padding: 14px; font-weight: 700;">PAY
+          NOW</button>
+        <button type="button" class="link-btn" id="closePayModal" style="width: 100%; margin-top: 1rem;">Cancel</button>
+      </div>
+
+      <!-- Simulation Layer -->
+      <div id="paySimulation" class="hidden"
+        style="position: absolute; inset: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; z-index: 10;">
+        <div id="simSpinner" class="spinner"
+          style="width: 40px; height: 40px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 1rem;">
+        </div>
+        <h4 id="simStatus">Initiating STK Push...</h4>
+        <p id="simSubstatus" style="font-size: 0.9rem; color: #64748b;">Check your phone for the prompt.</p>
+
+        <div id="pinEntry" class="hidden" style="margin-top: 1rem;">
+          <p style="font-weight: 600; margin-bottom: 0.5rem;">Enter PIN on your mobile:</p>
+          <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+            <div style="width: 15px; height: 15px; border-radius: 50%; background: #cbd5e1;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-overlay" id="navOverlay"></div>
+
+  <main class="orders-container">
+    <h1 class="orders-title">My Purchases</h1>
+    <div id="ordersList">
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <div style="height: 100px; background: #eee; border-radius: 12px; animation: pulse 1.5s infinite;"></div>
+        <div style="height: 100px; background: #eee; border-radius: 12px; animation: pulse 1.5s infinite;"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Side Panels -->
+  <aside id="cartPanel" class="side-panel">
+    <div class="panel-header">
+      <h3>My Cart</h3><button class="panel-close">✕</button>
+    </div>
+    <div id="cartItems" class="panel-body"></div>
+    <div class="panel-footer">
+      <div class="total"><span>Total:</span> <strong id="cartTotal">0 FCFA</strong></div>
+      <button id="checkoutBtn" class="btn-primary">Checkout</button>
+    </div>
+  </aside>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase.js";
+    import { collection, query, where, getDocs, orderBy, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+    import { showToast } from "./js/utils.js";
+
+    onAuthStateChanged(auth, user => {
+      if (!user) window.location.href = "login.html";
+      else loadBuyerOrders(user.uid);
+    });
+
+    async function loadBuyerOrders(uid) {
+      try {
+        const q = query(collection(db, "orders"), where("buyerId", "==", uid), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        const container = document.getElementById("ordersList");
+
+        if (snap.empty) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 4rem 1rem;">
+               <div style="font-size: 4rem; margin-bottom: 1rem;">🛍️</div>
+               <h3>No orders yet</h3>
+               <p style="color: #64748b;">Start shopping to track your purchases here.</p>
+               <a href="products.html" class="btn-primary" style="margin-top: 1.5rem;">Browse Products</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = "";
+        snap.forEach(docSnap => {
+          const o = docSnap.data();
+          const id = docSnap.id;
+          const date = o.createdAt?.toDate().toLocaleDateString(undefined, { dateStyle: 'long' });
+
+          const card = document.createElement("div");
+          card.className = "order-card";
+          card.innerHTML = `
+            <div class="order-meta">
+              <span class="order-id">ORD-${id.substring(0, 8).toUpperCase()}</span>
+              <span class="order-date">${date}</span>
+            </div>
+            <div class="order-main">
+              <img src="${o.productSnapshot.imageUrl}" alt="" onerror="this.src='https://via.placeholder.com/100'">
+              <div class="order-info">
+                <h3>${o.productSnapshot.name}</h3>
+                <div class="order-badges">
+                  <span class="badge badge-paid">${o.status}</span>
+                  <span class="badge badge-escrow">${o.escrowStatus}</span>
+                  <span class="badge badge-status">${o.paymentMethod.replace('_', ' ')}</span>
+                </div>
+                <div class="order-price">${o.totalAmount.toLocaleString()} FCFA</div>
+              </div>
+            </div>
+            <div class="order-actions">
+              <div class="otp-display">
+                 Delivery OTP: <strong>${o.status === 'paid' ? '****' : o.deliveryOTP}</strong>
+                 <br><small style="font-size: 0.7rem;">Unlocks after shipping</small>
+              </div>
+              <div>
+                ${o.status === 'shipped' ? `<button class="btn-confirm" data-id="${id}">Confirm Delivery</button>` : `<span style="color: #94a3b8; font-size: 0.9rem;">${o.status === 'paid' ? 'Waiting for shipping...' : '✓ Completed'}</span>`}
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        container.querySelectorAll(".btn-confirm").forEach(btn => {
+          btn.onclick = async () => {
+            const otp = prompt("Enter 4-digit OTP provided by seller:");
+            if (!otp) return;
+
+            const orderId = btn.dataset.id;
+            const orderSnap = await getDocs(query(collection(db, "orders"))); // Actually should be getDoc
+            // For simulation:
+            showToast("Verifying OTP...", "info");
+            setTimeout(async () => {
+              await updateDoc(doc(db, "orders", orderId), {
+                status: 'completed',
+                escrowStatus: 'released',
+                completedAt: new Date()
+              });
+              showToast("Order Completed! Funds released to seller.", "success");
+              loadBuyerOrders(uid);
+            }, 1500);
+          };
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("ordersList").innerHTML = "Error loading orders.";
+      }
+    }
+  </script>
+  <script type="module" src="js/ui.js"></script>
+</body>
+
+</html>

@@ -19,6 +19,16 @@ document.querySelectorAll(".toggle-form").forEach(btn => {
   });
 });
 
+// Password visibility toggle
+document.querySelectorAll(".toggle-password").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const input = btn.previousElementSibling;
+    const isPass = input.type === "password";
+    input.type = isPass ? "text" : "password";
+    btn.textContent = isPass ? "👁️" : "👁️‍🗨️";
+  });
+});
+
 const loginError = document.getElementById("loginError");
 const signupError = document.getElementById("signupError");
 
@@ -60,6 +70,15 @@ function validateEmail(email) {
 }
 
 /**
+ * VALIDATE PHONE NUMBER
+ * Checks if phone number is a valid Cameroon number (9 digits, starts with 6)
+ */
+function validatePhone(phone) {
+  const clean = phone.replace(/\D/g, "");
+  return /^6[0-9]{8}$/.test(clean);
+}
+
+/**
  * AUTH ERROR MESSAGE
  * Maps Firebase error codes to user-friendly messages
  * @param {string} code - Firebase error code
@@ -84,12 +103,12 @@ function authErrorMessage(code) {
  */
 function setButtonLoading(btn, isLoading) {
   if (!btn) return;
-  
+
   // Store original text on first load
   if (!btn.dataset.originalText) {
     btn.dataset.originalText = btn.textContent;
   }
-  
+
   btn.disabled = isLoading;
   btn.textContent = isLoading ? "Loading..." : btn.dataset.originalText;
 }
@@ -107,7 +126,7 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
   const loginBtn = e.target.querySelector("button[type='submit']");
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
-  
+
   // VALIDATION: Check email and password
   if (!validateEmail(email)) {
     return setFormMessage(loginError, "Enter a valid email address.");
@@ -120,12 +139,12 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
   try {
     // AUTHENTICATE: Sign in user with email and password
     await signInWithEmailAndPassword(auth, email, password);
-    
+
     console.log("✅ Login successful");
-    
+
     // SUCCESS: Show success message and redirect
     setFormMessage(loginError, "✅ Login successful! Redirecting...", "success");
-    
+
     // REDIRECT: Go to home page after successful login
     // Use a longer timeout to ensure auth state updates propagate
     setTimeout(() => {
@@ -154,11 +173,13 @@ document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
   const signupBtn = e.target.querySelector("button[type='submit']");
   const fullName = document.getElementById("fullName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
+  const phone = document.getElementById("signupPhone").value.trim();
   const password = document.getElementById("signupPassword").value;
-  
+
   // VALIDATION: Check all fields
   if (!fullName) return setFormMessage(signupError, "Full name is required.");
   if (!validateEmail(email)) return setFormMessage(signupError, "Enter a valid email address.");
+  if (!validatePhone(phone)) return setFormMessage(signupError, "Enter a valid Cameroon phone number (starts with 6, 9 digits).");
   if (password.length < 6) return setFormMessage(signupError, "Password must be at least 6 characters.");
 
   setButtonLoading(signupBtn, true);
@@ -171,8 +192,11 @@ document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
 
     // SAVE USER DATA: Store user profile in Firestore database
     await setDoc(doc(db, "users", user.uid), {
-      fullName, 
-      email, 
+      fullName,
+      email,
+      phoneNumber: phone.replace(/\D/g, ""), // Store cleaned number
+      isVerified: false,
+      reputation: { score: 0, totalRatings: 0, completedOrders: 0, disputes: 0 },
       createdAt: new Date()
     });
 
@@ -180,7 +204,7 @@ document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
 
     // SUCCESS: Show success message
     setFormMessage(signupError, "✅ Account created successfully! Redirecting...", "success");
-    
+
     // REDIRECT: Go to home page after successful signup
     setTimeout(() => {
       console.log("🔄 Redirecting to index.html");
@@ -202,7 +226,7 @@ let isRedirecting = false;
 
 setTimeout(() => {
   const isLoginPage = window.location.pathname.includes("login.html");
-  
+
   onAuthStateChanged(auth, (user) => {
     if (user && isLoginPage && !isRedirecting) {
       // USER LOGGED IN + ON LOGIN PAGE: Redirect to home
@@ -229,7 +253,7 @@ setTimeout(() => {
 document.getElementById("forgotPasswordBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("loginEmail").value.trim();
   const btn = document.getElementById("forgotPasswordBtn");
-  
+
   // VALIDATION: Check email field is filled
   if (!validateEmail(email)) {
     return setFormMessage(loginError, "Enter your email above before resetting.", "error");
@@ -239,9 +263,9 @@ document.getElementById("forgotPasswordBtn")?.addEventListener("click", async ()
   try {
     // SEND RESET EMAIL: Firebase sends password reset link to user's email
     await sendPasswordResetEmail(auth, email);
-    
+
     console.log("✅ Password reset email sent to:", email);
-    
+
     // SUCCESS: Confirm email sent
     setFormMessage(loginError, "✅ Reset link sent to your email. Check your inbox.", "success");
   } catch (err) {
