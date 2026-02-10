@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <title>Admin Dashboard - ElectroHub</title>
+     <link rel="stylesheet" href="../css/global.css" />
+     <link rel="stylesheet" href="../css/dashboard.css" />
+     <style>
+          /* Admin Specific Overrides */
+          .dashboard {
+               display: flex !important;
+               height: 100vh;
+               background: #f8fafc;
+          }
+
+          .admin-stats {
+               display: grid;
+               grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+               gap: 1.5rem;
+               margin-bottom: 2.5rem;
+          }
+
+          .stat-card {
+               background: white;
+               padding: 1.5rem;
+               border-radius: 12px;
+               box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+               border-left: 4px solid #3B82F6;
+          }
+
+          .stat-card:nth-child(2) {
+               border-left-color: #10b981;
+          }
+
+          .stat-card:nth-child(3) {
+               border-left-color: #f59e0b;
+          }
+
+          .stat-card h3 {
+               color: #64748b;
+               font-size: 0.8rem;
+               text-transform: uppercase;
+               letter-spacing: 0.05em;
+               margin-bottom: 0.5rem;
+          }
+
+          .stat-card p {
+               color: #0f172a;
+               font-size: 1.75rem;
+               font-weight: 800;
+          }
+
+          .action-btn {
+               padding: 6px 14px;
+               border-radius: 6px;
+               border: none;
+               cursor: pointer;
+               font-size: 0.85rem;
+               font-weight: 600;
+               transition: all 0.2s;
+          }
+
+          .btn-verify {
+               background: #dcfce7;
+               color: #15803d;
+          }
+
+          .btn-verify:hover {
+               background: #bbf7d0;
+          }
+
+          .btn-delete {
+               background: #fee2e2;
+               color: #b91c1c;
+          }
+
+          .btn-delete:hover {
+               background: #fecaca;
+          }
+
+          /* Sidebar link spacing fix */
+          .sidebar-menu li {
+               margin-bottom: 5px;
+          }
+
+          .sidebar-menu li a {
+               padding: 12px 20px;
+               border-radius: 8px;
+          }
+     </style>
+</head>
+
+<body>
+     <div class="dashboard">
+          <aside class="sidebar" id="sidebar">
+               <div class="sidebar-header">
+                    <h2 class="sidebar-logo">Admin Panel</h2>
+               </div>
+               <ul class="menu sidebar-menu">
+                    <li class="active" data-page="users"><span class="icon">👥</span> <span class="label">Users</span>
+                    </li>
+                    <li data-page="products"><span class="icon">📦</span> <span class="label">Products</span></li>
+                    <li data-page="verifications"><span class="icon">✓</span> <span class="label">Verifications</span>
+                    </li>
+                    <li style="margin-top: auto;"><a href="../index.html"
+                              style="text-decoration:none; color:inherit; display: flex; align-items: center; gap: 10px;">
+                              <span class="icon">🏠</span><span class="label">Back to Home</span></a></li>
+               </ul>
+          </aside>
+
+          <main class="content">
+               <header class="topbar">
+                    <button id="sidebarToggle" class="burger" aria-label="Toggle menu">☰</button>
+                    <h1 id="contentTitle">Admin Dashboard</h1>
+                    <div class="topbar-right">
+                         <span id="adminEmail" style="font-size: 0.9rem; color: #666;">admin@electrohub.com</span>
+                    </div>
+               </header>
+
+               <div id="pageContent" class="page-content">
+                    <div class="admin-stats">
+                         <div class="stat-card">
+                              <h3>Total Users</h3>
+                              <p id="totalUsers">...</p>
+                         </div>
+                         <div class="stat-card">
+                              <h3>Total Products</h3>
+                              <p id="totalProducts">...</p>
+                         </div>
+                         <div class="stat-card">
+                              <h3>Pending Verifications</h3>
+                              <p id="pendingVerif">...</p>
+                         </div>
+                    </div>
+
+                    <section id="tableSection">
+                         <h2 id="tableTitle">Users Management</h2>
+                         <div class="table-container">
+                              <table class="table">
+                                   <thead>
+                                        <tr id="tableHead"></tr>
+                                   </thead>
+                                   <tbody id="tableBody">
+                                        <tr>
+                                             <td colspan="5">Loading...</td>
+                                        </tr>
+                                   </tbody>
+                              </table>
+                         </div>
+                    </section>
+               </div>
+          </main>
+     </div>
+
+     <script type="module" src="admin.js"></script>
+</body>
+
+</html>

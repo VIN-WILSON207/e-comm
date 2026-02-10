@@ -64,6 +64,7 @@ body {
   justify-content: space-between;
   margin-bottom: 18px;
 }
+
 .burger {
   border: none;
   background: #e5e7eb;
@@ -77,11 +78,31 @@ body {
   font-size: 1.4rem;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.profile-photo-top {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .topbar input {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  width: 280px;
+  width: 250px;
 }
 
 .page {
@@ -117,7 +138,8 @@ body {
   margin-bottom: 12px;
 }
 
-.filters input, .filters select {
+.filters input,
+.filters select {
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -131,7 +153,8 @@ body {
   border: 1px solid #e5e7eb;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   padding: 10px 12px;
   border-bottom: 1px solid #f3f4f6;
   text-align: left;
@@ -149,7 +172,40 @@ body {
   margin-bottom: 12px;
 }
 
-.profile-form input, .profile-form button {
+@media (max-width: 600px) {
+  .profile-form .grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .filters input,
+  .filters select {
+    width: 100%;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .stat h3 {
+    font-size: 0.9rem;
+  }
+
+  .stat p {
+    font-size: 1.2rem;
+  }
+}
+
+.profile-form input,
+.profile-form button {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -170,7 +226,9 @@ body {
   padding: 12px;
 }
 
-form input, form textarea, form button {
+form input,
+form textarea,
+form button {
   width: 100%;
   padding: 12px;
   margin-bottom: 12px;
@@ -197,6 +255,17 @@ form button {
   margin-top: 20px;
 }
 
+@media (max-width: 480px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .product-card h3 {
+    font-size: 0.9rem;
+  }
+}
+
 /* Product Card */
 .product-card {
   background: #ffffff;
@@ -208,7 +277,7 @@ form button {
 }
 
 .product-card:hover {
-  box-shadow: 0px 2px 10px rgba(0,0,0,0.08);
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .product-card img {
@@ -282,17 +351,206 @@ form button {
 }
 
 /* Responsive Sidebar Collapse */
-.dashboard { position: relative; }
-.sidebar.collapsed { width: 72px; }
-.sidebar.collapsed .label { display: none; }
-@media (max-width: 900px) {
-  .sidebar {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    transform: translateX(0);
-    transition: transform 0.2s ease;
-    z-index: 20;
-  }
-  .sidebar.hide { transform: translateX(-100%); }
+.dashboard {
+  position: relative;
 }
 
+.sidebar.collapsed {
+  width: 72px;
+}
+
+.sidebar.collapsed .label {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    width: 250px;
+    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.hide {
+    transform: translateX(-100%);
+  }
+
+  .content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 10px 15px;
+  }
+
+  .topbar h1 {
+    font-size: 1.2rem;
+  }
+
+  /* Table responsiveness */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    background: white;
+    border-radius: 8px;
+  }
+
+  .table {
+    min-width: 600px;
+  }
+
+  .profile-view {
+    padding: 1rem;
+  }
+
+  .add-product-form {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar-right #globalSearch {
+    display: none;
+    /* Hide search on very small phones to save space */
+  }
+
+  .profile-photo-top {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.form-message {
+  color: #e74c3c;
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.btn-logout-small {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 5px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  margin-top: 10px;
+}
+
+.btn-logout-small:hover {
+  opacity: 1;
+  color: #e74c3c;
+}
+
+/* Modal & Verification Refinements */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 15px 0;
+}
+
+.upload-card {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 20px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  min-height: 140px;
+  justify-content: center;
+}
+
+.upload-card:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.upload-card .icon {
+  font-size: 2rem;
+}
+
+.upload-card .label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.upload-card img.preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 480px) {
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+}

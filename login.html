@@ -1,21 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Login / Signup</title>
   <link rel="stylesheet" href="css/auth.css">
 </head>
+
 <body>
   <div class="auth-container">
     <!-- LOGIN FORM -->
     <form id="loginForm" class="form active">
       <h2>Sign in</h2>
       <div id="loginError" class="form-message"></div>
+
       <label for="loginEmail">Email</label>
       <input id="loginEmail" type="email" required />
+
       <label for="loginPassword">Password</label>
-      <input id="loginPassword" type="password" required />
+      <div class="password-field">
+        <input id="loginPassword" type="password" required />
+        <button type="button" class="toggle-password" aria-label="Toggle password visibility">👁️‍🗨️</button>
+      </div>
       <button type="submit">Sign In</button>
       <button type="button" id="forgotPasswordBtn" class="link-btn">Forgot password?</button>
       <p>Don't have an account? <button type="button" class="toggle-form">Create account</button></p>
@@ -25,12 +32,22 @@
     <form id="signupForm" class="form">
       <h2>Create account</h2>
       <div id="signupError" class="form-message"></div>
+
       <label for="fullName">Full name</label>
       <input id="fullName" type="text" required />
+
       <label for="signupEmail">Email</label>
-      <input id="signupEmail" type="email" required />
+      <input id="signupEmail" type="email" required placeholder="example@email.com" />
+
+      <label for="signupPhone">Phone Number</label>
+      <input id="signupPhone" type="tel" required placeholder="237 6" />
+
       <label for="signupPassword">Password</label>
-      <input id="signupPassword" type="password" required />
+      <small class="helper-text">Minimum 6 characters</small>
+      <div class="password-field">
+        <input id="signupPassword" type="password" required minlength="6" />
+        <button type="button" class="toggle-password" aria-label="Toggle password visibility">👁️‍🗨️</button>
+      </div>
       <button type="submit">Create account</button>
       <p>Already have an account? <button type="button" class="toggle-form">Sign in</button></p>
     </form>
@@ -38,6 +55,5 @@
 
   <script type="module" src="js/auth.js"></script>
 </body>
+
 </html>
-
-

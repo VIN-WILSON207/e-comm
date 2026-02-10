@@ -2,10 +2,13 @@ import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { handleImageError, showToast, getCart, saveCart, showError, showSuccess } from "./utils.js";
+import { PaymentService } from "./services/payments.js";
+import { OrderService } from "./services/orders.js";
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    
+
 // UI REFERENCES
-    
+
 const refs = {
   signinLink: document.getElementById("signinLink"),
   sellBtn: document.getElementById("sellBtn"),
@@ -23,13 +26,26 @@ const refs = {
   favoritesItems: document.getElementById("favoritesItems"),
   cartTotal: document.getElementById("cartTotal"),
   checkoutBtn: document.getElementById("checkoutBtn"),
+  paymentModal: document.getElementById("paymentModal"),
+  closePayModal: document.getElementById("closePayModal"),
+  confirmPayBtn: document.getElementById("confirmPayBtn"),
+  payAmountDisplay: document.getElementById("payAmountDisplay"),
+  payPhone: document.getElementById("payPhone"),
+  paySimulation: document.getElementById("paySimulation"),
+  simStatus: document.getElementById("simStatus"),
+  simSubstatus: document.getElementById("simSubstatus"),
+  pinEntry: document.getElementById("pinEntry"),
   authArea: document.getElementById("authArea"),
   authLinks: document.getElementById("authLinks"),
+  mobileMenuToggle: document.getElementById("mobileMenuToggle"),
+  navOverlay: document.getElementById("navOverlay"),
+  mainNav: document.querySelector(".main-nav"),
+  navActions: document.querySelector(".nav-actions"),
 };
 
-    
+
 // STATE
-   
+
 const state = {
   profile: null,
   orders: [],
@@ -44,10 +60,19 @@ let _userDocUnsubscribe = null;
 
 window.handleImageError = handleImageError;
 
-   
+
 // INIT
-   
+
 function init() {
+  // Re-populate refs to ensure they are captured after DOM is ready
+  Object.keys(refs).forEach(key => {
+    const el = document.getElementById(key);
+    if (el) refs[key] = el;
+  });
+  // Manual overrides for selectors
+  refs.mainNav = document.querySelector(".main-nav");
+  refs.navActions = document.querySelector(".nav-actions");
+
   setupPanelClosers();
   setupPanelOpeners();
   setupProfileActions();
@@ -57,9 +82,9 @@ function init() {
   updateCartUI();
 }
 
-    
+
 // AUTH STATE LISTENER
-   
+
 onAuthStateChanged(auth, async (user) => {
   state.authReady = true;
   state.currentUser = user;
@@ -74,16 +99,20 @@ onAuthStateChanged(auth, async (user) => {
 
   if (user) {
     await ensureUserDoc(user.uid);
-    await hydrateProfile(user);
 
     // realtime listener for user's document -- updates cart & favorites automatically
     _userDocUnsubscribe = onSnapshot(doc(db, "users", user.uid), (snap) => {
       const data = snap.exists() ? snap.data() : {};
+      state.profile = data;
       state.cart = Array.isArray(data.cart) ? data.cart : [];
       state.favorites = Array.isArray(data.favorites) ? data.favorites : [];
+
+      // Update Navbar UI with Profile Photo
+      updateProfileUI(data);
+
       updateCartDisplay();
       updateCartUI();
-      renderFavorites(); // safe to call even if panel not open
+      renderFavorites();
     }, (err) => {
       console.error("User doc onSnapshot error:", err);
     });
@@ -94,7 +123,7 @@ onAuthStateChanged(auth, async (user) => {
     state.profile = null;
     state.cart = [];
     state.favorites = [];
-    renderLoggedOutProfile();
+    updateProfileUI(null);
     updateCartDisplay();
     updateCartUI();
     if (refs.favoritesItems) {
@@ -106,9 +135,84 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-    
+function updateProfileUI(data) {
+  const profileIcon = document.getElementById("profileIcon");
+  const dropdown = document.getElementById("profileDropdown");
+  const emailDisplay = document.getElementById("userEmailDisplay");
+
+  if (!profileIcon) return;
+
+  if (data) {
+    const photoURL = data.photoURL || "";
+    if (photoURL) {
+      profileIcon.innerHTML = `<img src="${photoURL}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">`;
+      profileIcon.style.background = "none";
+    } else {
+      profileIcon.innerHTML = "👤";
+    }
+
+    if (emailDisplay) emailDisplay.textContent = data.email || auth.currentUser?.email || "";
+
+    // Add Edit Photo button if not present
+    if (dropdown && !document.getElementById("navEditPhotoBtn")) {
+      const hr = dropdown.querySelector("hr");
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "dropdown-link";
+      editBtn.id = "navEditPhotoBtn";
+      editBtn.innerHTML = "📷 Edit Profile Photo";
+      editBtn.onclick = () => document.getElementById("navPhotoInput")?.click();
+      dropdown.insertBefore(editBtn, hr.nextSibling);
+
+      // Create hidden file input
+      if (!document.getElementById("navPhotoInput")) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.id = "navPhotoInput";
+        input.style.display = "none";
+        input.accept = "image/*";
+        input.onchange = handleNavPhotoUpload;
+        document.body.appendChild(input);
+      }
+    }
+  } else {
+    profileIcon.innerHTML = "👤";
+    // Remove edit photo button and input if user logs out
+    document.getElementById("navEditPhotoBtn")?.remove();
+    document.getElementById("navPhotoInput")?.remove();
+  }
+}
+
+async function handleNavPhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file || !auth.currentUser) return;
+
+  showToast("Uploading photo...", "info");
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: "POST",
+      body: formData
+    });
+    const result = await res.json();
+    if (result.secure_url) {
+      await updateDoc(doc(db, "users", auth.currentUser.uid), { photoURL: result.secure_url });
+      showToast("Profile photo updated!", "success");
+    } else {
+      throw new Error("Upload failed");
+    }
+  } catch (err) {
+    showToast("Photo upload failed", "error");
+    console.error(err);
+  }
+}
+
+
 // SETUP FUNCTIONS
-    
+
 function setupProfileActions() {
   console.log("📱 Setting up profile actions...");
 
@@ -160,27 +264,128 @@ function setupPanelOpeners() {
 }
 
 function attachCheckoutHandler() {
+  // Method selection logic for the modal
+  document.querySelectorAll(".payment-method")?.forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".payment-method").forEach(b => {
+        b.classList.remove("active");
+        b.style.borderColor = "#e2e8f0";
+        b.style.background = "#f8fafc";
+      });
+      btn.classList.add("active");
+      btn.style.borderColor = "#3b82f6";
+      btn.style.background = "#eff6ff";
+    });
+  });
+
+  refs.closePayModal?.addEventListener("click", () => {
+    refs.paymentModal?.classList.add("hidden");
+    refs.paySimulation?.classList.add("hidden");
+  });
+
   refs.checkoutBtn?.addEventListener("click", async () => {
-    if (!auth.currentUser) return showLoginPopup("checkout");
-    if (!state.cart.length) return showToast("Add items before checkout.", "info");
-    if (!confirm("Proceed to checkout?")) return;
-    
-    // Clear cart from Firebase
+    console.log("🛒 Checkout button clicked!");
+    if (!auth.currentUser) {
+      console.log("⚠️ No user logged in, showing login popup");
+      return showLoginPopup("checkout");
+    }
+    if (!state.cart.length) {
+      console.log("⚠️ Cart is empty");
+      return showToast("Add items before checkout.", "info");
+    }
+
+    const total = state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    console.log("💰 Order total:", total);
+    if (refs.payAmountDisplay) refs.payAmountDisplay.textContent = `${total.toLocaleString()} FCFA`;
+
+    console.log("📦 Showing payment modal...");
+    refs.paymentModal?.classList.remove("hidden");
+    refs.paySimulation?.classList.add("hidden");
+    refs.pinEntry?.classList.add("hidden");
+  });
+
+  refs.confirmPayBtn?.addEventListener("click", async () => {
+    const phone = refs.payPhone?.value.trim();
+    if (!phone || phone.length < 9) return showToast("Please enter a valid 9-digit number.", "error");
+
+    const activeMethod = document.querySelector(".payment-method.active");
+    const provider = activeMethod?.dataset.method || "mtn";
+
     try {
-      const userRef = doc(db, "users", auth.currentUser.uid);
-      await updateDoc(userRef, { cart: [] });
+      // 1. Show Simulation Overlay
+      refs.paySimulation?.classList.remove("hidden");
+      refs.simStatus.textContent = "Initiating STK Push...";
+      refs.simSubstatus.textContent = `Sending request to ${phone} via ${provider.toUpperCase()}...`;
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      // 2. PIN Entry state
+      refs.simStatus.textContent = "Waiting for PIN...";
+      refs.simSubstatus.textContent = "A prompt has been sent to your phone. Please enter your MoMo/Orange PIN.";
+      refs.pinEntry?.classList.remove("hidden");
+
+      await new Promise(r => setTimeout(r, 4000));
+
+      // 3. Completing
+      refs.pinEntry?.classList.add("hidden");
+      refs.simStatus.textContent = "Verifying Transaction...";
+      refs.simSubstatus.textContent = "Communicating with provider servers...";
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      // 4. Finalize Orders
+      const ordersRef = collection(db, "orders");
+      const deliveryOTP = String(Math.floor(1000 + Math.random() * 9000));
+
+      // Create orders in Firestore
+      const batchPromises = state.cart.map(item => {
+        return addDoc(ordersRef, {
+          buyerId: auth.currentUser.uid,
+          sellerId: item.sellerId || "admin",
+          productId: item.productId || item.id,
+          productSnapshot: {
+            name: item.name,
+            price: item.price,
+            imageUrl: item.image || item.imageUrl
+          },
+          quantity: item.quantity,
+          totalAmount: item.price * item.quantity,
+          status: "paid",
+          escrowStatus: "held",
+          paymentMethod: `${provider}_mobile_money`,
+          deliveryOTP: deliveryOTP,
+          phoneNumber: phone,
+          createdAt: serverTimestamp(),
+          timestamps: {
+            paidAt: serverTimestamp()
+          }
+        });
+      });
+
+      await Promise.all(batchPromises);
+
+      // 5. Clear Cart
       state.cart = [];
-      updateCartUI();
+      await updateDoc(doc(db, "users", auth.currentUser.uid), { cart: [] });
       updateCartDisplay();
-      showSuccess("Checkout complete!");
-    } catch (error) {
-      showError("Checkout failed");
-      console.error(error);
+      updateCartUI();
+
+      showToast("Payment Successful! Your order is now being processed.", "success");
+
+      setTimeout(() => {
+        refs.paymentModal?.classList.add("hidden");
+        window.location.href = "orders.html";
+      }, 1500);
+
+    } catch (err) {
+      console.error(err);
+      showToast("Transaction failed. Please try again.", "error");
+      refs.paySimulation?.classList.add("hidden");
     }
   });
 }
 
-   
+
 // NAVBAR HANDLERS
 
 function attachNavbarHandlers() {
@@ -287,33 +492,66 @@ function attachNavbarHandlers() {
       favPanel.classList.remove("open");
     }
   });
+
+  // Mobile Menu Toggle logic
+  refs.mobileMenuToggle?.addEventListener("click", () => {
+    const mainNav = document.querySelector(".main-nav");
+    if (!mainNav) return;
+    const isOpen = mainNav.classList.toggle("open");
+    refs.mobileMenuToggle?.classList.toggle("active", isOpen);
+    refs.navOverlay?.classList.toggle("show", isOpen);
+
+    // Close other panels if opening mobile menu
+    if (isOpen) {
+      document.getElementById("cartPanel")?.classList.remove("open");
+      document.getElementById("favoritesPanel")?.classList.remove("open");
+    }
+  });
+
+  // Close mobile menu on overlay click
+  refs.navOverlay?.addEventListener("click", () => {
+    const mainNav = document.querySelector(".main-nav");
+    mainNav?.classList.remove("open");
+    refs.mobileMenuToggle?.classList.remove("active");
+    refs.navOverlay?.classList.remove("show");
+  });
+
+  // Close mobile menu when a drawer link/button is clicked
+  document.querySelector(".main-nav")?.querySelectorAll("a, button").forEach(link => {
+    link.addEventListener("click", () => {
+      const mainNav = document.querySelector(".main-nav");
+      mainNav?.classList.remove("open");
+      refs.mobileMenuToggle?.classList.remove("active");
+      refs.navOverlay?.classList.remove("show");
+    });
+  });
 }
 
-   
+
 /* ---------- Login popup: ensure element + show/hide logic ---------- */
 function _ensureLoginPopupElement() {
-    let p = document.getElementById("loginPopup");
-    if (!p) {
-        p = document.createElement("div");
-        p.id = "loginPopup";
-        p.className = "popup hidden";
-        p.style.display = "none";
-        document.body.appendChild(p);
-        console.log("✅ created #loginPopup element");
-    }
-    return p;
+  let p = document.getElementById("loginPopup");
+  if (!p) {
+    p = document.createElement("div");
+    p.id = "loginPopup";
+    p.className = "popup hidden";
+    p.style.display = "none";
+    document.body.appendChild(p);
+    console.log("✅ created #loginPopup element");
+  }
+  return p;
 }
 
 function _buildLoginPopupHtml(action = "general") {
-    const msgs = {
-        cart: "Sign in to view your cart",
-        favorites: "Sign in to save your favorites",
-        sell: "Sign in to start selling",
-        checkout: "Sign in to proceed with checkout",
-        general: "Sign in to continue"
-    };
-    const m = msgs[action] || msgs.general;
-    return `
+  const msgs = {
+    cart: "Sign in to view your cart",
+    favorites: "Sign in to save your favorites",
+    sell: "Sign in to start selling",
+    checkout: "Sign in to proceed with checkout",
+    general: "Sign in to continue"
+  };
+  const m = msgs[action] || msgs.general;
+  return `
       <div class="popup-inner" role="dialog" aria-modal="true">
         <button class="popup-close" aria-label="Close popup">✕</button>
         <h3>${m}</h3>
@@ -327,57 +565,57 @@ function _buildLoginPopupHtml(action = "general") {
 }
 
 function showLoginPopup(action = "general") {
-    try {
-        console.log("📋 showLoginPopup called:", action);
-        const popup = _ensureLoginPopupElement();
-        popup.innerHTML = _buildLoginPopupHtml(action);
+  try {
+    console.log("📋 showLoginPopup called:", action);
+    const popup = _ensureLoginPopupElement();
+    popup.innerHTML = _buildLoginPopupHtml(action);
 
-        // show
-        popup.classList.remove("hidden");
-        popup.style.display = "flex";
-        popup.style.visibility = "visible";
-        popup.style.opacity = "1";
+    // show
+    popup.classList.remove("hidden");
+    popup.style.display = "flex";
+    popup.style.visibility = "visible";
+    popup.style.opacity = "1";
 
-        // close helpers
-        const close = () => {
-            popup.classList.add("hidden");
-            popup.style.display = "none";
-            popup.style.visibility = "hidden";
-            popup.style.opacity = "0";
-        };
+    // close helpers
+    const close = () => {
+      popup.classList.add("hidden");
+      popup.style.display = "none";
+      popup.style.visibility = "hidden";
+      popup.style.opacity = "0";
+    };
 
-        const closeBtn = popup.querySelector(".popup-close");
-        if (closeBtn) closeBtn.addEventListener("click", (e) => { e.stopPropagation(); close(); });
+    const closeBtn = popup.querySelector(".popup-close");
+    if (closeBtn) closeBtn.addEventListener("click", (e) => { e.stopPropagation(); close(); });
 
-        const cancelBtn = popup.querySelector(".btn-cancel");
-        if (cancelBtn) cancelBtn.addEventListener("click", (e) => { e.stopPropagation(); close(); });
+    const cancelBtn = popup.querySelector(".btn-cancel");
+    if (cancelBtn) cancelBtn.addEventListener("click", (e) => { e.stopPropagation(); close(); });
 
-        // close on outside click
-        popup.addEventListener("click", function onOutsideClick(e) {
-            if (e.target === popup) {
-                popup.removeEventListener("click", onOutsideClick);
-                close();
-            }
-        });
+    // close on outside click
+    popup.addEventListener("click", function onOutsideClick(e) {
+      if (e.target === popup) {
+        popup.removeEventListener("click", onOutsideClick);
+        close();
+      }
+    });
 
-        // close on escape
-        const onKey = (ev) => { if (ev.key === "Escape") { close(); window.removeEventListener("keydown", onKey); } };
-        window.addEventListener("keydown", onKey);
+    // close on escape
+    const onKey = (ev) => { if (ev.key === "Escape") { close(); window.removeEventListener("keydown", onKey); } };
+    window.addEventListener("keydown", onKey);
 
-        console.log("✅ login popup displayed");
-    } catch (err) {
-        console.error("❌ showLoginPopup error:", err);
-        // fallback redirect
-        window.location.href = "login.html";
-    }
+    console.log("✅ login popup displayed");
+  } catch (err) {
+    console.error("❌ showLoginPopup error:", err);
+    // fallback redirect
+    window.location.href = "login.html";
+  }
 }
 
 // expose globally so other modules (products.js) can call it
 window.showLoginPopup = showLoginPopup;
 
-    
+
 // UI HELPERS
-   
+
 function toggleAuthUI(isAuthenticated) {
   if (!refs.authLinks || !refs.profileMenu) return;
 
@@ -408,9 +646,9 @@ function closePanel(panel) {
   panel?.classList.remove("open");
 }
 
-  
+
 // CART MANAGEMENT (Firebase)
-  
+
 
 /**
  * SAVE CART TO FIREBASE
@@ -781,7 +1019,7 @@ window.addToCart = async function (productId, productName, productPrice, product
     updateCartDisplay();
     updateCartUI();
     showSuccess(`${productName} added to cart!`);
-    
+
   } catch (error) {
     console.error("❌ Error in addToCart:", error);
     showError("Failed to add item to cart");

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Admin Login - ElectroHub</title>
+     <link rel="stylesheet" href="../css/global.css">
+     <link rel="stylesheet" href="../css/auth.css">
+</head>
+
+<body style="background-color: #f4f7f6;">
+     <div class="auth-container">
+          <div class="form active">
+               <h2>Admin Portal</h2>
+               <p style="margin-bottom: 2rem;">Access for authorized personnel only</p>
+
+               <form id="adminLoginForm">
+                    <div id="loginError" class="form-message" style="display: none;"></div>
+
+                    <label class="helper-text">Admin Email</label>
+                    <input type="email" id="adminEmail" placeholder="admin@electrohub.com" required>
+
+                    <label class="helper-text">Password</label>
+                    <div class="password-field">
+                         <input type="password" id="adminPassword" placeholder="••••••••" required>
+                         <button type="button" id="togglePassword" class="toggle-password">👁️‍🗨️</button>
+                    </div>
+
+                    <button type="submit" id="loginBtn" style="margin-top: 20px;">Log in to Dashboard</button>
+               </form>
+
+               <a href="../index.html" class="link-btn">← Back to Marketplace</a>
+          </div>
+     </div>
+
+     <script type="module" src="login.js"></script>
+</body>
+
+</html>
